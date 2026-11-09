@@ -1,0 +1,36 @@
+{
+  "original_asset": "app/models/ipp31078-cartoon-v2.glb",
+  "restored_asset": "app/models/original-v1.glb",
+  "original_meshes": 18,
+  "identical_neutral_position_meshes": [
+    "torso",
+    "neck",
+    "collar",
+    "head",
+    "ear_left",
+    "ear_right",
+    "hair",
+    "hair_part",
+    "nose",
+    "eye_left_white",
+    "eye_left_iris",
+    "eye_left_glint",
+    "brow_left",
+    "eye_right_white",
+    "eye_right_iris",
+    "eye_right_glint",
+    "brow_right",
+    "mouth"
+  ],
+  "added_meshes": [
+    "lash_left",
+    "lash_right",
+    "lid_left_lower",
+    "lid_left_upper",
+    "lid_right_lower",
+    "lid_right_upper"
+  ],
+  "all_original_neutral_geometry_identical": true,
+  "doraemon_sha256": "645c14c688f298fa3996d78677480d012c8d4228fe52ec4a2cb71e8c4954ddc4",
+  "pikachu_sha256": "7d0e835433b705e882a0909ea9c28ebe3e05acf90764431d04f892dad5cecdad"
+}

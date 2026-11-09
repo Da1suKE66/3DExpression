@@ -11,7 +11,7 @@ export async function readTrackingFile(file) {
   const origin = data.source_type === 'recorded_tracking' ? data.replay_metadata?.original_source_type : data.source_type;
   if (!['live_camera', 'synthetic_test'].includes(origin)) throw new Error('回放缺少原始输入来源');
   if (data.parameters?.avatar_id !== PARAMS.avatar_id || data.calibration?.status !== 'complete') throw new Error('模型或校准信息不匹配');
-  if (!['doraemon','pikachu'].includes(data.model_info?.avatar_key) || !/^[a-f0-9]{64}$/.test(data.model_info?.sha256 || '') || data.calibration.avatar_key !== data.model_info.avatar_key || data.calibration.model_sha256 !== data.model_info.sha256) throw new Error('角色与校准记录不匹配');
+  if (!['doraemon','pikachu','original'].includes(data.model_info?.avatar_key) || !/^[a-f0-9]{64}$/.test(data.model_info?.sha256 || '') || data.calibration.avatar_key !== data.model_info.avatar_key || data.calibration.model_sha256 !== data.model_info.sha256) throw new Error('角色与校准记录不匹配');
   if (JSON.stringify(canonical(data.parameters)) !== JSON.stringify(canonical(PARAMS))) throw new Error('记录的固定参数与当前版本不一致，无法按同一配置回放');
   let previous = -Infinity;
   for (const frame of data.frames) {

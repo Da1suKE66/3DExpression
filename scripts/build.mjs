@@ -17,7 +17,7 @@ try {
   const lock = JSON.parse(await fs.readFile(path.join(root, 'evidence/dependency_lock.json'), 'utf8'));
   for (const item of lock.files) assert('dependency_' + item.path, hash(await fs.readFile(path.join(root, item.path))) === item.sha256);
   const catalog = JSON.parse(await fs.readFile(path.join(root, 'app/avatar_catalog.json'), 'utf8'));
-  assert('two_distinct_character_choices', catalog.avatars.length === 2 && new Set(catalog.avatars.map(item => item.key)).size === 2);
+  assert('three_distinct_character_choices', catalog.avatars.length === 3 && new Set(catalog.avatars.map(item => item.key)).size === 3);
   const inspections = [];
   let actualNames = [];
   for (const manifest of catalog.avatars) {

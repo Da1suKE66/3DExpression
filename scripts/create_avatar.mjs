@@ -9,19 +9,31 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const configs=[
   {key:'doraemon',id:'ipp31078-doraemon-v1',label:'哆啦A梦 · 自制卡通版',skin:0xffffff,body:0x158dcc,eye:0xffffff,iris:0x172631,ex:0.18,ey:0.62,ew:0.151,eh:0.185,ez:0.68,my:-0.14,mw:0.34,mz:0.678,browY:0.86},
   {key:'pikachu',id:'ipp31078-pikachu-v1',label:'皮卡丘 · 自制卡通版',skin:0xf5d340,body:0xf5d340,eye:0x172631,iris:0x172631,ex:0.285,ey:0.49,ew:0.11,eh:0.127,ez:0.575,my:0.025,mw:0.17,mz:0.632,browY:0.76},
+  {key:'original',id:'ipp31078-original-v1',label:'原版人头',skin:0xe8b99b,body:0x326e7a,eye:0xf7f6ee,iris:0x293c43,ex:0.275,ey:0.44,ew:0.153,eh:0.108,ez:0.553,my:-0.15,mw:0.213,mz:0.577,browY:0.65},
 ];
 const clamp=n=>Math.max(0,Math.min(1,n));
 async function buildCharacter(c){
   const pieces=[];
   function add(name,color,geometry,morphs={},region='head'){pieces.push({name,color,geometry,morphs,region});}
   function sphere(name,color,center,scale,morphs={},region='head',angle=0){
-    const g=new THREE.SphereGeometry(1,36,26);g.scale(...scale);if(angle)g.rotateZ(angle);g.translate(...center);add(name,color,g,morphs,region);
+    const g=new THREE.SphereGeometry(1,c.key==='original'?40:36,c.key==='original'?28:26);g.scale(...scale);if(angle)g.rotateZ(angle);g.translate(...center);add(name,color,g,morphs,region);
   }
   function line(name,color,points,radius=0.006,morphs={},region='head'){
     add(name,color,new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))),36,radius,6,false),morphs,region);
   }
-  const jawSkin=(x,y,z)=>[x,y-clamp((0.15-y)/0.95)*0.09,z];
-  if(c.key==='doraemon'){
+  const jawSkin=(x,y,z)=>[x,y-(c.key==='original'?Math.max(0,(0.15-y)/0.95)*0.11:clamp((0.15-y)/0.95)*0.09),z];
+  if(c.key==='original'){
+    // Preserve the original person's head, hair, clothing and neutral silhouette.
+    sphere('torso',c.body,[0,-1.12,-0.13],[0.96,0.57,0.48],{},'body');
+    sphere('neck',c.skin,[0,-0.64,-0.02],[0.23,0.35,0.25],{},'body');
+    sphere('collar',0xe5e9e4,[0,-0.85,0.05],[0.32,0.12,0.29],{},'body');
+    sphere('head',c.skin,[0,0.22,0],[0.71,0.91,0.60],{jawOpen:jawSkin});
+    sphere('ear_left',c.skin,[0.70,0.16,-0.01],[0.105,0.20,0.11]);
+    sphere('ear_right',c.skin,[-0.70,0.16,-0.01],[0.105,0.20,0.11]);
+    sphere('hair',0x263744,[0,1.01,-0.05],[0.72,0.28,0.59]);
+    sphere('hair_part',0x263744,[-0.32,0.98,0.14],[0.37,0.18,0.43]);
+    sphere('nose',c.skin,[0,0.17,0.595],[0.082,0.145,0.115]);
+  }else if(c.key==='doraemon'){
     sphere('torso',c.body,[0,-0.99,-0.10],[0.66,0.69,0.46],{},'body');
     sphere('belly',0xffffff,[0,-1.02,0.345],[0.46,0.47,0.13],{},'body');
     sphere('collar',0xd94048,[0,-0.40,0.09],[0.57,0.065,0.40],{},'body');
@@ -49,13 +61,15 @@ async function buildCharacter(c){
   }
   for(const [side,sign] of [['Left',1],['Right',-1]]){
     const lower=side.toLowerCase();
+    if(c.key!=='original'){
     sphere('arm_'+lower,c.body,[sign*(c.key==='doraemon'?0.64:0.48),-0.98,-0.01],[0.18,0.36,0.20],{},'body',sign*0.22);
     sphere('hand_'+lower,c.key==='doraemon'?0xffffff:c.skin,[sign*(c.key==='doraemon'?0.74:0.56),-1.21,0.08],[0.19,0.18,0.21],{},'body');
     sphere('foot_'+lower,c.key==='doraemon'?0xffffff:c.skin,[sign*0.31,-1.60,0.06],[0.31,0.15,0.32],{},'body');
+    }
     const cx=sign*c.ex,cy=c.ey;
-    sphere('eye_'+lower+'_white',c.eye,[cx,cy,c.ez],[c.ew,c.eh,0.061],{['eyeWide'+side]:(x,y,z)=>[x,cy+(y-cy)*1.5,z]});
-    sphere('eye_'+lower+'_iris',c.iris,[cx-sign*0.008,cy-0.004,c.ez+0.058],[c.ew*0.34,c.eh*0.43,0.020]);
-    sphere('eye_'+lower+'_glint',0xffffff,[cx-0.015,cy+c.eh*0.19,c.ez+0.078],[0.016,0.021,0.007]);
+    sphere('eye_'+lower+'_white',c.eye,[cx,cy,c.ez],[c.ew,c.eh,c.key==='original'?0.068:0.061],{['eyeWide'+side]:(x,y,z)=>[x,cy+(y-cy)*1.5,z]});
+    sphere('eye_'+lower+'_iris',c.iris,c.key==='original'?[cx,cy,0.617]:[cx-sign*0.008,cy-0.004,c.ez+0.058],c.key==='original'?[0.058,0.072,0.019]:[c.ew*0.34,c.eh*0.43,0.020]);
+    sphere('eye_'+lower+'_glint',0xffffff,c.key==='original'?[cx-0.015,cy+0.025,0.635]:[cx-0.015,cy+c.eh*0.19,c.ez+0.078],c.key==='original'?[0.015,0.019,0.004]:[0.016,0.021,0.007]);
     const half=c.ew*1.08,front=c.ez+0.091;
     const ellipse=x=>Math.sqrt(Math.max(0,1-((x-cx)/half)**2));
     const closed=x=>cy-c.eh*0.04+c.eh*0.08*((x-cx)/half)**2;
@@ -80,21 +94,25 @@ async function buildCharacter(c){
       ['eyeBlink'+side]:(x,y,z)=>[x,y+closed(x)-open(x),z],
       ['eyeWide'+side]:(x,y,z)=>[x,y+c.eh*0.5*ellipse(x),z],
     });
-    sphere('brow_'+lower,0x263640,[cx,c.browY,c.ez-0.05],[c.ew*0.8,0.011,0.016],{
+    sphere('brow_'+lower,c.key==='original'?0x263744:0x263640,[cx,c.browY,c.key==='original'?0.542:c.ez-0.05],c.key==='original'?[0.153,0.025,0.025]:[c.ew*0.8,0.011,0.016],c.key==='original'?{
+      browInnerUp:(x,y,z)=>[x,y+0.16*clamp((0.44-sign*x)/0.32),z],
+      ['browOuterUp'+side]:(x,y,z)=>[x,y+0.14*clamp((sign*x-0.11)/0.32),z],
+      ['browDown'+side]:(x,y,z)=>[x-sign*0.025,y-0.11*Math.max(0.25,(0.52-sign*x)/0.4),z],
+    }:{
       browInnerUp:(x,y,z)=>[x,y+0.13*clamp((c.ex+c.ew-sign*x)/(2*c.ew)),z],
       ['browOuterUp'+side]:(x,y,z)=>[x,y+0.13*clamp((sign*x-c.ex+c.ew)/(2*c.ew)),z],
       ['browDown'+side]:(x,y,z)=>[x-sign*0.018,y-0.095*clamp((c.ex+c.ew-sign*x)/(2*c.ew)),z],
     });
   }
-  const mouthCurve=x=>(c.key==='doraemon'?0.045:0.025)*(x/c.mw)**2;
-  const mouthMorphs={jawOpen:(x,y,z)=>[x,c.my+(y-c.my-mouthCurve(x))*12+mouthCurve(x)-0.065,z],mouthPucker:(x,y,z)=>[x*0.52,c.my+(y-c.my)*2.8,z+0.07]};
+  const mouthCurve=x=>(c.key==='original'?0:c.key==='doraemon'?0.045:0.025)*(x/c.mw)**2;
+  const mouthMorphs={jawOpen:(x,y,z)=>[x,c.my+(y-c.my-mouthCurve(x))*12+mouthCurve(x)-(c.key==='original'?0.075:0.065),z],mouthPucker:(x,y,z)=>[x*(c.key==='original'?0.5:0.52),c.my+(y-c.my)*2.8,z+0.07]};
   for(const [side,sign] of [['Left',1],['Right',-1]]){
-    const weight=x=>Math.max(0,sign*x/c.mw);
-    mouthMorphs['mouthSmile'+side]=(x,y,z)=>[x+sign*0.04*weight(x),y+0.12*weight(x)**1.6,z];
-    mouthMorphs['mouthFrown'+side]=(x,y,z)=>[x+sign*0.02*weight(x),y-0.13*weight(x)**1.5,z];
-    mouthMorphs['mouthPress'+side]=(x,y,z)=>[x+sign*0.015*weight(x),c.my+(y-c.my)*(1-0.65*clamp(weight(x))),z-0.012*clamp(weight(x))];
+    const weight=x=>Math.max(0,sign*x/(c.key==='original'?0.21:c.mw));
+    mouthMorphs['mouthSmile'+side]=(x,y,z)=>[x+sign*(c.key==='original'?0.07:0.04)*weight(x),y+(c.key==='original'?0.13:0.12)*weight(x)**(c.key==='original'?1.7:1.6),z];
+    mouthMorphs['mouthFrown'+side]=(x,y,z)=>[x+sign*0.02*weight(x),y-(c.key==='original'?0.14:0.13)*weight(x)**1.5,z];
+    mouthMorphs['mouthPress'+side]=(x,y,z)=>[x+sign*(c.key==='original'?0.02:0.015)*(c.key==='original'?clamp(weight(x)):weight(x)),c.my+(y-c.my)*(1-(c.key==='original'?0.6:0.65)*clamp(weight(x))),z-0.012*clamp(weight(x))];
   }
-  sphere('mouth',c.key==='doraemon'?0x763340:0x3b292b,[0,c.my,c.mz],[c.mw,0.014,0.026],mouthMorphs);
+  sphere('mouth',c.key==='original'?0x713c40:c.key==='doraemon'?0x763340:0x3b292b,[0,c.my,c.mz],[c.mw,0.014,c.key==='original'?0.024:0.026],mouthMorphs);
   const mouthGeometry=pieces.at(-1).geometry,mp=mouthGeometry.attributes.position;
   for(let i=0;i<mp.count;i++)mp.setY(i,mp.getY(i)+mouthCurve(mp.getX(i)));
   mouthGeometry.computeVertexNormals();
@@ -110,7 +128,7 @@ async function buildCharacter(c){
     const g=piece.geometry;if(!g.attributes.normal)g.computeVertexNormals();const base=g.attributes.position.array,names=Object.keys(piece.morphs);
     const primitive={attributes:{POSITION:accessor(base,3,5126,true),NORMAL:accessor(g.attributes.normal.array,3)},material:materials.length};
     if(g.index)primitive.indices=accessor(g.index.array,1,g.index.array.BYTES_PER_ELEMENT===2?5123:5125);
-    materials.push({name:piece.name+'_material',pbrMetallicRoughness:{baseColorFactor:[...new THREE.Color(piece.color).toArray(),1],metallicFactor:0,roughnessFactor:0.82},doubleSided:piece.name.startsWith('lid_')});
+    materials.push({name:piece.name+'_material',pbrMetallicRoughness:{baseColorFactor:[...new THREE.Color(piece.color).toArray(),1],metallicFactor:0,roughnessFactor:c.key==='original'?0.8:0.82},doubleSided:piece.name.startsWith('lid_')});
     if(names.length)primitive.targets=names.map(name=>{
       const target=g.clone(),pos=target.attributes.position.array;for(let i=0;i<pos.length;i+=3)pos.set(piece.morphs[name](...base.subarray(i,i+3)),i);target.computeVertexNormals();
       return{POSITION:accessor(Float32Array.from(pos,(v,i)=>v-base[i]),3,5126,true),NORMAL:accessor(Float32Array.from(target.attributes.normal.array,(v,i)=>v-g.attributes.normal.array[i]),3)};
@@ -119,7 +137,8 @@ async function buildCharacter(c){
     meshes.push(mesh);nodes.push({name:piece.name,mesh:meshes.length-1});details.push({mesh:piece.name,vertices:base.length/3,morph_target_names:names,region:piece.region});
   }
   const headNodes=pieces.flatMap((p,i)=>p.region==='head'?[i]:[]),bodyNodes=pieces.flatMap((p,i)=>p.region==='body'?[i]:[]);
-  for(const i of headNodes)nodes[i].translation=[0,-0.25,0];const pivot=nodes.length;nodes.push({name:'head_pivot',translation:[0,0.25,0],children:headNodes});
+  const pivotY=c.key==='original'?0.2:0.25;
+  for(const i of headNodes)nodes[i].translation=[0,-pivotY,0];const pivot=nodes.length;nodes.push({name:'head_pivot',translation:[0,pivotY,0],children:headNodes});
   const gltf={asset:{version:'2.0',generator:'IPP31078 parametric cartoon characters v3',extras:{provenance:'Project-authored parametric fan character geometry; no downloaded character mesh.',automatic_animation:false}},scene:0,scenes:[{name:c.label,nodes:[...bodyNodes,pivot]}],nodes,meshes,materials,accessors,bufferViews:views,buffers:[{byteLength}]};
   const json=Buffer.from(JSON.stringify(gltf)),jp=Buffer.alloc(Math.ceil(json.length/4)*4,0x20);json.copy(jp);const binary=Buffer.concat(chunks);
   const header=Buffer.alloc(12);header.writeUInt32LE(0x46546c67);header.writeUInt32LE(2,4);header.writeUInt32LE(12+8+jp.length+8+binary.length,8);

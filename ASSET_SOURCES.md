@@ -4,12 +4,13 @@
 
 ## 项目自制化身
 
-两个角色均由scripts/create_avatar.mjs使用球体、曲线及参数化眼皮生成，无下载的角色网格或贴图：
+三种化身均由scripts/create_avatar.mjs使用球体、曲线及参数化眼皮生成，无下载的角色网格或贴图：
 
 - app/models/doraemon-v1.glb：哆啦A梦自制卡通版，39个网格。
 - app/models/pikachu-v1.glb：皮卡丘自制卡通版，31个网格。
+- app/models/original-v1.glb：原版人头，24个网格；原有18个部件的中性顶点位置逐字节保留，新增6个上下眼皮及闭眼线网格，见evidence/testing/v3_1/original_geometry_restore.json。
 
-两者都有17个实际非零形变、独立head_pivot及上下眼皮/闭眼线，无动画片段。角色名称及形象属于相应权利人，这些是项目绘制的非官方同人练习模型。角色清单、逐文件摘要及实际映射见app/avatar_catalog.json；默认模型副本为app/model_manifest.json；v2、v3.0元数据分别保存在model_manifest-v1.json、model_manifest-v2.json，供旧记录校验。
+三者都有17个实际非零形变、独立head_pivot及上下眼皮/闭眼线，无动画片段。角色名称及形象属于相应权利人，这些是项目绘制的非官方同人练习模型。角色清单、逐文件摘要及实际映射见app/avatar_catalog.json；默认模型副本为app/model_manifest.json；v2、v3.0元数据分别保存在model_manifest-v1.json、model_manifest-v2.json，供旧记录校验。
 
 眼球不因眨眼缩放；上下眼皮合拢，闭眼时遮住眼球与高光。中性校准后的眨眼信号在0.08至0.55区间平滑映射到0至1，完整闭眼优先于睁大眼睛。眨眼通道35ms平滑，其他表情80ms。切换角色清除旧校准；录像、未保存记录和A/B体验期间锁定角色。
 

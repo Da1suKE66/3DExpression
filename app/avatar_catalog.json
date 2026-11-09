@@ -575,6 +575,226 @@
           "region": "head"
         }
       ]
+    },
+    {
+      "key": "original",
+      "id": "ipp31078-original-v1",
+      "label": "原版人头",
+      "asset_path": "models/original-v1.glb",
+      "sha256": "a99fa07e35f6f4cb0d8fbbd763ac9f39ccf391145a132236d9efdb0fd6c47edb",
+      "bytes": 1427692,
+      "head_pivot": "head_pivot",
+      "creator": "project_authored_parametric_character_mesh",
+      "generator": "scripts/create_avatar.mjs",
+      "animation_clips": [],
+      "automatic_animation": false,
+      "eyelid_mode": "skin_lids_and_lashline_over_fixed_eyeball",
+      "mapping": {
+        "jawOpen": "jawOpen",
+        "eyeBlinkLeft": "eyeBlinkLeft",
+        "eyeBlinkRight": "eyeBlinkRight",
+        "mouthSmileLeft": "mouthSmileLeft",
+        "mouthSmileRight": "mouthSmileRight",
+        "mouthFrownLeft": "mouthFrownLeft",
+        "mouthFrownRight": "mouthFrownRight",
+        "browDownLeft": "browDownLeft",
+        "browDownRight": "browDownRight",
+        "browInnerUp": "browInnerUp",
+        "browOuterUpLeft": "browOuterUpLeft",
+        "browOuterUpRight": "browOuterUpRight",
+        "eyeWideLeft": "eyeWideLeft",
+        "eyeWideRight": "eyeWideRight",
+        "mouthPucker": "mouthPucker",
+        "mouthPressLeft": "mouthPressLeft",
+        "mouthPressRight": "mouthPressRight"
+      },
+      "meshes": [
+        {
+          "mesh": "torso",
+          "vertices": 1189,
+          "morph_target_names": [],
+          "region": "body"
+        },
+        {
+          "mesh": "neck",
+          "vertices": 1189,
+          "morph_target_names": [],
+          "region": "body"
+        },
+        {
+          "mesh": "collar",
+          "vertices": 1189,
+          "morph_target_names": [],
+          "region": "body"
+        },
+        {
+          "mesh": "head",
+          "vertices": 1189,
+          "morph_target_names": [
+            "jawOpen"
+          ],
+          "region": "head"
+        },
+        {
+          "mesh": "ear_left",
+          "vertices": 1189,
+          "morph_target_names": [],
+          "region": "head"
+        },
+        {
+          "mesh": "ear_right",
+          "vertices": 1189,
+          "morph_target_names": [],
+          "region": "head"
+        },
+        {
+          "mesh": "hair",
+          "vertices": 1189,
+          "morph_target_names": [],
+          "region": "head"
+        },
+        {
+          "mesh": "hair_part",
+          "vertices": 1189,
+          "morph_target_names": [],
+          "region": "head"
+        },
+        {
+          "mesh": "nose",
+          "vertices": 1189,
+          "morph_target_names": [],
+          "region": "head"
+        },
+        {
+          "mesh": "eye_left_white",
+          "vertices": 1189,
+          "morph_target_names": [
+            "eyeWideLeft"
+          ],
+          "region": "head"
+        },
+        {
+          "mesh": "eye_left_iris",
+          "vertices": 1189,
+          "morph_target_names": [],
+          "region": "head"
+        },
+        {
+          "mesh": "eye_left_glint",
+          "vertices": 1189,
+          "morph_target_names": [],
+          "region": "head"
+        },
+        {
+          "mesh": "lid_left_upper",
+          "vertices": 369,
+          "morph_target_names": [
+            "eyeBlinkLeft",
+            "eyeWideLeft"
+          ],
+          "region": "head"
+        },
+        {
+          "mesh": "lid_left_lower",
+          "vertices": 369,
+          "morph_target_names": [
+            "eyeBlinkLeft",
+            "eyeWideLeft"
+          ],
+          "region": "head"
+        },
+        {
+          "mesh": "lash_left",
+          "vertices": 259,
+          "morph_target_names": [
+            "eyeBlinkLeft",
+            "eyeWideLeft"
+          ],
+          "region": "head"
+        },
+        {
+          "mesh": "brow_left",
+          "vertices": 1189,
+          "morph_target_names": [
+            "browInnerUp",
+            "browOuterUpLeft",
+            "browDownLeft"
+          ],
+          "region": "head"
+        },
+        {
+          "mesh": "eye_right_white",
+          "vertices": 1189,
+          "morph_target_names": [
+            "eyeWideRight"
+          ],
+          "region": "head"
+        },
+        {
+          "mesh": "eye_right_iris",
+          "vertices": 1189,
+          "morph_target_names": [],
+          "region": "head"
+        },
+        {
+          "mesh": "eye_right_glint",
+          "vertices": 1189,
+          "morph_target_names": [],
+          "region": "head"
+        },
+        {
+          "mesh": "lid_right_upper",
+          "vertices": 369,
+          "morph_target_names": [
+            "eyeBlinkRight",
+            "eyeWideRight"
+          ],
+          "region": "head"
+        },
+        {
+          "mesh": "lid_right_lower",
+          "vertices": 369,
+          "morph_target_names": [
+            "eyeBlinkRight",
+            "eyeWideRight"
+          ],
+          "region": "head"
+        },
+        {
+          "mesh": "lash_right",
+          "vertices": 259,
+          "morph_target_names": [
+            "eyeBlinkRight",
+            "eyeWideRight"
+          ],
+          "region": "head"
+        },
+        {
+          "mesh": "brow_right",
+          "vertices": 1189,
+          "morph_target_names": [
+            "browInnerUp",
+            "browOuterUpRight",
+            "browDownRight"
+          ],
+          "region": "head"
+        },
+        {
+          "mesh": "mouth",
+          "vertices": 1189,
+          "morph_target_names": [
+            "jawOpen",
+            "mouthPucker",
+            "mouthSmileLeft",
+            "mouthFrownLeft",
+            "mouthPressLeft",
+            "mouthSmileRight",
+            "mouthFrownRight",
+            "mouthPressRight"
+          ],
+          "region": "head"
+        }
+      ]
     }
   ]
 }

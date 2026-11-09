@@ -21,7 +21,7 @@
         <div class="stage-bottom"><span id="phase-label">尚未开始</span><div><span id="render-rate">画面 — fps</span><span id="tracking-rate">结果 — Hz</span></div></div>
       </section>
       <aside class="controls">
-        <div class="avatar-choice"><label for="avatar-select">选择卡通化身</label><select id="avatar-select" disabled><option value="doraemon">哆啦A梦 · 自制卡通版</option><option value="pikachu">皮卡丘 · 自制卡通版</option></select><p class="small">切换后重新校准；A/B体验期间锁定同一角色。</p></div>
+        <div class="avatar-choice"><label for="avatar-select">选择卡通化身</label><select id="avatar-select" disabled><option value="doraemon">哆啦A梦 · 自制卡通版</option><option value="pikachu">皮卡丘 · 自制卡通版</option><option value="original">原版人头</option></select><p class="small">切换后重新校准；A/B体验期间锁定同一角色。</p></div>
         <div class="connection"><div class="connection-title"><h2>体验准备</h2><span id="load-state">加载化身</span></div><progress id="load-progress" max="1" value="0"></progress><div class="two-buttons"><button id="camera-start" class="primary" disabled>启动摄像头</button><button id="camera-stop" disabled>停止</button></div><p class="small">摄像头视频不上传。记录包含匿名编号、检测状态、表情参数、实际更新率和自评。</p><label class="check"><input id="consent" type="checkbox"><span>我了解记录内容，自愿体验并可随时停止；不适时立即停止。</span></label></div>
         <section id="study-setup">
           <fieldset id="setup-fields"><label for="participant-id">匿名参与者编号</label><input id="participant-id" value="P01" maxlength="24" autocomplete="off" spellcheck="false"><div class="field-pair"><div><label for="condition-order">条件顺序</label><select id="condition-order"><option value="AB">A → B</option><option value="BA">B → A</option></select></div><div><label for="record-kind">记录用途</label><select id="record-kind"><option value="internal">内部试用</option><option value="exploratory">探索性体验</option></select></div></div><p class="small">编号不含姓名或学号。按分配表选择顺序；两条件各 90 秒，任务完全相同。</p></fieldset>
@@ -56,8 +56,8 @@
         <p id="message" role="status" aria-live="polite">正在加载本地化身，请稍候。</p><details><summary>本次固定设置与来源</summary><p class="small">17个面部动作系数；头部跟随在 A/B 两条件相同；每条件90秒；眨眼平滑35ms、其他表情80ms、头部100ms；3秒中性校准。本版使用新协议，旧记录单独保留。</p><p class="small">画面 fps 来自实际渲染计数，结果 Hz 来自实际结果时间戳。单次推理耗时及浏览器管线时间不代表物理端到端延迟。</p><p class="small">正式体验期间仍统一隐藏本人小窗；自编四项问卷逐题报告。</p></details>
       </aside>
     </div>
-    <footer><span>IPP31078 · 卡通角色与闭眼改进 · 协议 AB90-v3.1</span><span>两个角色的真人跟随待继续验收</span></footer>
+    <footer><span>IPP31078 · 卡通角色与闭眼改进 · 协议 AB90-v3.1</span><span>原版人头、哆啦A梦、皮卡丘</span></footer>
   </main>
-  <script type="module">import('./main.js?ui=characters-v031-20261109').catch(error=>{document.getElementById('message').textContent='启动失败：'+error.message+'。请通过启动脚本打开，并检查本地资产。';});</script>
+  <script type="module">import('./main.js?ui=characters-v031-original-20261109').catch(error=>{document.getElementById('message').textContent='启动失败：'+error.message+'。请通过启动脚本打开，并检查本地资产。';});</script>
 </body>
 </html>

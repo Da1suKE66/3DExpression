@@ -26,13 +26,13 @@ def prepare(destination):
     paths += [p.relative_to(ROOT) for p in (ROOT/'app').iterdir() if p.is_file() and p.suffix in ('.js','.json','.css','.html')]
     catalog=json.loads((ROOT/'app/avatar_catalog.json').read_text())
     paths += [Path('app')/model['asset_path'] for model in catalog['avatars']]
-    paths += [Path('app/vendor/THREE-LICENSE.txt'),Path('app/vendor/MEDIAPIPE-LICENSE.txt'),Path('evidence/dependency_lock.json'),Path('evidence/model_inspection_v3_1.json'),Path('evidence/testing/v3_1/build_report.json'),Path('evidence/testing/v3_1/browser_render_check.json')]
+    paths += [Path('app/vendor/THREE-LICENSE.txt'),Path('app/vendor/MEDIAPIPE-LICENSE.txt'),Path('evidence/dependency_lock.json'),Path('evidence/model_inspection_v3_1.json'),Path('evidence/testing/v3_1/build_report.json'),Path('evidence/testing/v3_1/browser_render_check.json'),Path('evidence/testing/v3_1/original_browser_check.json'),Path('evidence/testing/v3_1/original_geometry_restore.json')]
     paths += [p.relative_to(ROOT) for p in (ROOT/'portable').iterdir() if p.is_file()]
     for rel in paths:
         source=ROOT/rel
         if source.is_symlink() or not source.is_file():raise ValueError('发布文件不存在或不是普通文件：'+str(rel))
         target=destination/rel;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source,target)
-    for name in ['SYNTHETIC_doraemon.jpg','SYNTHETIC_doraemon_closed.jpg','SYNTHETIC_pikachu.jpg','SYNTHETIC_pikachu_closed.jpg']:
+    for name in ['SYNTHETIC_doraemon.jpg','SYNTHETIC_doraemon_closed.jpg','SYNTHETIC_pikachu.jpg','SYNTHETIC_pikachu_closed.jpg','SYNTHETIC_original.jpg','SYNTHETIC_original_closed.jpg']:
         target=destination/'docs/assets'/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(ROOT/'evidence/testing/v3_1'/name,target)
     for name in ['engineering_acceptance.csv','video_metric_annotations.csv']:
         source=(ROOT/'templates'/name) if (ROOT/'templates'/name).exists() else ROOT/'materials'/name
