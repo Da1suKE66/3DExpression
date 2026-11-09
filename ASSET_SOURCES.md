@@ -1,10 +1,17 @@
 # 资产、依赖与实际映射
 
-当前版本0.3.0。浏览器运行依赖固定为Three.js 0.160.1（MIT）、MediaPipe Tasks Vision 0.10.21（Apache-2.0）及官方Face Landmarker float16/1模型。精确URL、大小及SHA-256在evidence/dependency_lock.json。首次下载由scripts/fetch_assets.py校验，之后本地运行。
+当前版本0.3.1。浏览器运行依赖固定为Three.js 0.160.1（MIT）、MediaPipe Tasks Vision 0.10.21（Apache-2.0）及官方Face Landmarker float16/1模型。精确URL、大小及SHA-256在evidence/dependency_lock.json。首次下载由scripts/fetch_assets.py校验，之后本地运行。
 
 ## 项目自制化身
 
-app/models/ipp31078-cartoon-v2.glb由scripts/create_avatar.mjs生成；18个网格、17个实际非零形变、独立head_pivot节点，0个动画片段。没有外部真人头像、Face Cap网格或自动动作。当前资产摘要与映射见app/model_manifest.json；原版元数据见app/model_manifest-v1.json。
+两个角色均由scripts/create_avatar.mjs使用球体、曲线及参数化眼皮生成，无下载的角色网格或贴图：
+
+- app/models/doraemon-v1.glb：哆啦A梦自制卡通版，39个网格。
+- app/models/pikachu-v1.glb：皮卡丘自制卡通版，31个网格。
+
+两者都有17个实际非零形变、独立head_pivot及上下眼皮/闭眼线，无动画片段。角色名称及形象属于相应权利人，这些是项目绘制的非官方同人练习模型。角色清单、逐文件摘要及实际映射见app/avatar_catalog.json；默认模型副本为app/model_manifest.json；v2、v3.0元数据分别保存在model_manifest-v1.json、model_manifest-v2.json，供旧记录校验。
+
+眼球不因眨眼缩放；上下眼皮合拢，闭眼时遮住眼球与高光。中性校准后的眨眼信号在0.08至0.55区间平滑映射到0至1，完整闭眼优先于睁大眼睛。眨眼通道35ms平滑，其他表情80ms。切换角色清除旧校准；录像、未保存记录和A/B体验期间锁定角色。
 
 形变名称与MediaPipe类别逐一对应：jawOpen、eyeBlinkLeft、eyeBlinkRight、mouthSmileLeft、mouthSmileRight、mouthFrownLeft、mouthFrownRight、browDownLeft、browDownRight、browInnerUp、browOuterUpLeft、browOuterUpRight、eyeWideLeft、eyeWideRight、mouthPucker、mouthPressLeft、mouthPressRight。“伤心”“惊讶”等是动作组合标签，不是对真实情绪的识别结论。
 

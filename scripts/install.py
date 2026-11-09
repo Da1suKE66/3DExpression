@@ -20,8 +20,10 @@ def main():
         fetcher=ROOT/'scripts/fetch_assets.py'
         if not fetcher.exists():raise SystemExit('交付包缺失资产，请重新复制完整app目录：'+','.join(missing))
         print('正在修复固定版本运行资产，首次下载需要网络。',flush=True);subprocess.run([sys.executable,str(fetcher)],cwd=ROOT,check=True)
-    model=json.loads((ROOT/'app/model_manifest.json').read_text());path=ROOT/'app'/model['asset_path']
-    if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest()!=model['sha256']:raise SystemExit('卡通化身缺失或被修改，请使用完整交付包或重新构建。')
+    catalog=json.loads((ROOT/'app/avatar_catalog.json').read_text())
+    for model in catalog['avatars']:
+        path=ROOT/'app'/model['asset_path']
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest()!=model['sha256']:raise SystemExit('卡通化身缺失或被修改：'+model['label']+'；请使用完整交付包或重新构建。')
     print('本地运行资产校验通过。原型可离线运行。',flush=True)
     if not args.app_only:
         target=ROOT/'.analysis_deps'

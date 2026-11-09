@@ -1,10 +1,12 @@
 import test from 'node:test';
+import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import { PARAMS, TASKS, QUESTIONS, COEFFICIENTS, neutral, mapExpression, correctExpression, makeCalibration, ExpressionFilter, RateMeter, taskAt, makeSession, StudyController, suggestedOrder, csv } from '../app/core.js';
+import { PARAMS, TASKS, QUESTIONS, COEFFICIENTS, neutral, mapExpression, correctExpression, retargetExpression, makeCalibration, ExpressionFilter, RateMeter, taskAt, makeSession, StudyController, suggestedOrder, csv } from '../app/core.js';
 import { readTrackingFile, TrackingReplay } from '../app/replay.js';
 
-const baseline = () => makeCalibration(Array.from({length:40},()=>Object.fromEntries(COEFFICIENTS.map(key=>[key,0.02]))),{source_type:'synthetic_test'});
-const make = order => makeSession({ id:'00000000-0000-4000-8000-000000000001',participantId:'TEST01',order:order||['A','B'],kind:'internal',consent:true,sourceType:'synthetic_test',calibration:baseline(),now:'2026-11-07T01:00:00+08:00',modelInfo:{id:PARAMS.avatar_id} });
+const model = JSON.parse(fs.readFileSync(new URL('../app/model_manifest.json',import.meta.url),'utf8'));
+const baseline = () => makeCalibration(Array.from({length:40},()=>Object.fromEntries(COEFFICIENTS.map(key=>[key,0.02]))),{source_type:'synthetic_test',avatar_key:model.key,model_sha256:model.sha256});
+const make = order => makeSession({ id:'00000000-0000-4000-8000-000000000001',participantId:'TEST01',order:order||['A','B'],kind:'internal',consent:true,sourceType:'synthetic_test',calibration:baseline(),now:'2026-11-07T01:00:00+08:00',modelInfo:{id:model.id,avatar_key:model.key,sha256:model.sha256} });
 const at = '2026-11-07T01:00:00+08:00';
 
 test('A remains neutral while B follows all seventeen bounded expression signals',()=>{
@@ -65,4 +67,18 @@ test('replay keeps synthetic origin, checks parameter equality independent of ke
  s.parameters=Object.fromEntries(Object.entries(s.parameters).reverse());const file=new File([JSON.stringify(s)],'synthetic.json');const record=await readTrackingFile(file);assert.equal(record.origin,'synthetic_test');
  const replay=new TrackingReplay(record);replay.play(0);assert.equal(replay.sample(0).sample_kind,'replay_frame');assert.equal(replay.sample(100).raw.jawOpen,0.5);
  s.parameters.gain.jawOpen=2;await assert.rejects(()=>readTrackingFile(new File([JSON.stringify(s)],'changed.json')));
+});
+
+
+test('calibrated blink closes fully without waiting for raw coefficient one and stays independent',()=>{
+ const target=retargetExpression({...neutral(),eyeBlinkLeft:0.55,eyeBlinkRight:0.06,eyeWideLeft:1,eyeWideRight:0.7});
+ assert.equal(target.eyeBlinkLeft,1);assert.equal(target.eyeBlinkRight,0);assert.equal(target.eyeWideLeft,0);assert.equal(target.eyeWideRight,0.7);
+ const filtered=new ExpressionFilter();filtered.update({...target,jawOpen:1},0);const next=filtered.update({...target,jawOpen:1},40);
+ assert.ok(next.eyeBlinkLeft>=PARAMS.blink_mapping.hide_eyeball_threshold);assert.ok(next.jawOpen<next.eyeBlinkLeft);
+ filtered.update(neutral(),80);assert.ok(filtered.value.eyeBlinkLeft<0.4);
+});
+
+test('replay rejects calibration belonging to another character',async()=>{
+ const s=make();s.frames=[{monotonic_ms:0,detected:0}];s.calibration.avatar_key='pikachu';
+ await assert.rejects(()=>readTrackingFile(new File([JSON.stringify(s)],'wrong-character.json')),/角色与校准/);
 });

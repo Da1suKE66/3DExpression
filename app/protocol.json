@@ -1,7 +1,7 @@
 {
-  "app_version": "0.3.0",
+  "app_version": "0.3.1",
   "schema_version": "3.0.0",
-  "protocol_version": "IPP31078-AB90-v3",
+  "protocol_version": "IPP31078-AB90-v3.1",
   "project_id": "IPP31078",
   "official_title": "基于面部识别跟踪技术探究化身面部表情对于用户具身感的影响",
   "parameters": {
@@ -15,6 +15,16 @@
     "deadzone": 0.015,
     "max_timer_step_ms": 100,
     "max_pixel_ratio": 1.5,
+    "blink_mapping": {
+      "open_threshold": 0.08,
+      "closed_threshold": 0.55,
+      "hide_eyeball_threshold": 0.82,
+      "priority_over_eye_wide": true
+    },
+    "coefficient_smoothing_tau_ms": {
+      "eyeBlinkLeft": 35,
+      "eyeBlinkRight": 35
+    },
     "gain": {
       "jawOpen": 1,
       "eyeBlinkLeft": 1,
@@ -55,11 +65,11 @@
       "A": "static_neutral",
       "B": "live_synchronous"
     },
-    "avatar_id": "ipp31078-cartoon-v2",
+    "avatar_id": "ipp31078-character-catalog-v1",
     "camera_pose": [
       0,
       0.08,
-      6.4
+      7.1
     ],
     "background": "#edf2f1"
   },

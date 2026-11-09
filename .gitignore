@@ -19,7 +19,7 @@ media/
 evidence/live_*/
 evidence/history/
 evidence/publish_*/
-evidence/testing/v3/sessions/
+evidence/testing/*/sessions/
 delivery/
 input/
 *.doc

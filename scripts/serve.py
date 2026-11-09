@@ -14,7 +14,7 @@ import threading
 import subprocess
 
 from evidence_registry import register
-from session_data import validate_session, validate_tracking, validate_evaluation, PARTICIPANT_COLUMNS, PROTOCOL, MODEL
+from session_data import validate_session, validate_tracking, validate_evaluation, PARTICIPANT_COLUMNS, PROTOCOL, MODEL, AVATAR_CATALOG
 from video_tools import ensure_mp4, inspect_video, ffmpeg_path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,6 +71,7 @@ class Handler(SimpleHTTPRequestHandler):
         route = unquote(urlsplit(self.path).path)
         if route == '/api/health':
             paths = ['vendor/three.module.js', 'vendor/addons/loaders/GLTFLoader.js', 'vendor/addons/utils/BufferGeometryUtils.js', 'vendor/vision_bundle.mjs', 'models/face_landmarker.task', MODEL['asset_path'], 'model_manifest.json', 'protocol.json', 'vendor/wasm/vision_wasm_internal.wasm', 'vendor/wasm/vision_wasm_internal.js', 'vendor/wasm/vision_wasm_nosimd_internal.js', 'vendor/wasm/vision_wasm_nosimd_internal.wasm']
+            paths.extend(['avatar_catalog.json', *[model['asset_path'] for model in AVATAR_CATALOG['avatars']]])
             missing = [name for name in paths if not (APP / name).is_file()]
             return self.json_response(200 if not missing else 503, {'project_id': 'IPP31078', 'version': PROTOCOL['app_version'], 'protocol_version': PROTOCOL['protocol_version'], 'offline_assets_ready': not missing, 'missing': missing, 'video_conversion_available': bool(ffmpeg_path()), 'real_camera_validation': 'pending_manual_acceptance'})
         if route == '/api/protocol':

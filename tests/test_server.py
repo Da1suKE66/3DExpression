@@ -14,6 +14,7 @@ import unittest
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from serve import Handler
+from session_data import PROTOCOL, AVATAR_CATALOG
 from video_tools import ffmpeg_path,inspect_video
 from test_pipeline import fixture
 
@@ -32,8 +33,10 @@ class ServerTests(unittest.TestCase):
         except HTTPError as error:response=error
         with response:return response.status,response.read()
     def test_health_local_glb_and_private_paths(self):
-        code,body=self.request('/api/health');self.assertEqual(code,200);self.assertEqual(json.loads(body)['version'],'0.3.0')
-        self.assertEqual(self.request('/models/ipp31078-cartoon-v2.glb')[0],200);self.assertEqual(self.request('/../project_meta.json')[0],404);self.assertEqual(self.request('/vendor/')[0],404)
+        code,body=self.request('/api/health');self.assertEqual(code,200);self.assertEqual(json.loads(body)['version'],PROTOCOL['app_version'])
+        
+        for model in AVATAR_CATALOG['avatars']:self.assertEqual(self.request('/'+model['asset_path'])[0],200)
+        self.assertEqual(self.request('/../project_meta.json')[0],404);self.assertEqual(self.request('/vendor/')[0],404)
     def test_append_only_save_and_idempotent_questionnaire_rows(self):
         data=fixture()
         for _ in range(2):self.assertEqual(self.request('/api/sessions',data)[0],201)

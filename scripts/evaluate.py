@@ -118,11 +118,11 @@ def video_annotations(root, issues):
 def paired_channels(frames,channels):
     result=[]
     for channel in channels:
-        pairs=[(f.get('corrected_'+channel),f.get('applied_'+channel)) for f in frames if f.get('detected')==1 and f.get('condition')=='B' and (not channel.startswith('pose_') or f.get('pose_valid'))]
+        pairs=[(f.get('target_'+channel,f.get('corrected_'+channel)),f.get('applied_'+channel)) for f in frames if f.get('detected')==1 and f.get('condition')=='B' and (not channel.startswith('pose_') or f.get('pose_valid'))]
         pairs=[(a,b) for a,b in pairs if finite(a) and finite(b)]
         if len(pairs)<4: continue
         a,b=zip(*pairs)
-        result.append({'channel':channel,'samples':len(pairs),'mean_absolute_error':statistics.mean(abs(x-y) for x,y in pairs),'pearson_r':correlation(a,b),'reference':'calibrated_input','output':'smoothed_applied_coefficient','unit':'rad' if channel.startswith('pose_') else 'coefficient'})
+        result.append({'channel':channel,'samples':len(pairs),'mean_absolute_error':statistics.mean(abs(x-y) for x,y in pairs),'pearson_r':correlation(a,b),'reference':'rig_target_after_calibration_and_retarget' if any('target_'+channel in f for f in frames) else 'calibrated_input','output':'smoothed_applied_coefficient','unit':'rad' if channel.startswith('pose_') else 'coefficient'})
     return result
 
 def summarize_record(item, annotations):
@@ -153,7 +153,7 @@ def summarize_record(item, annotations):
         values=[a for a in annotations if a['metric']==key and a['physical'] and a['session_id']==record['session_id']]
         output[key]=metric(key,median(a['delay_ms'] for a in values),'measured_manual_video' if values else 'pending_external_video','独立摄像机同时拍摄本人脸与显示器；人工标注输入和输出起始帧，按核对后的实际拍摄帧率换算',len(values),{'events':[{'event_id':a['event_id'],'delay_ms':a['delay_ms'],'frame_quantization_bound_ms':a['frame_quantization_bound_ms']} for a in values],'scope':'所附同步录像标注，不代表每一份参数记录独立测量'})
     trials=evaluation['trials'] if evaluation else []
-    neutral_ids={t['trial_id'] for t in trials if t['action']=='neutral' and t['status']=='completed' and t['end_monotonic_ms']-t['start_monotonic_ms']>=10000}
+    neutral_ids={t['trial_id'] for t in trials if t['action']=='neutral' and t['status']=='completed' and t.get('visible_duration_ms',0)>=10000}
     neutral=[f for f in results if f.get('trial_id') in neutral_ids and f['detected']==1]
     coefficients=specification(record)[0]['coefficients'];jitter={}
     # Pair only consecutive samples inside the same stationary trial, no loss gap.
@@ -174,7 +174,7 @@ def summarize_record(item, annotations):
         channels=paired_channels(selected,ACTION_CHANNELS.get(trial['action'],[]))
         if channels: consistency[trial['trial_id']]={'action':trial['action'],'channels':channels}
     values=[c['mean_absolute_error'] for t in consistency.values() for c in t['channels'] if c['unit']=='coefficient']
-    output['expression_drive_consistency']=metric('expression_drive_consistency',median(values),'measured_parameter_agreement' if consistency else 'pending_labelled_trials','各动作已校准输入与实际平滑驱动的同时间配对MAE及相关；不等于真实情绪识别准确率',sum(len(t['channels']) for t in consistency.values()),{'per_trial':consistency,'limitation':'80ms平滑会产生正常相位差；低变异输入的相关系数返回空值'})
+    output['expression_drive_consistency']=metric('expression_drive_consistency',median(values),'measured_parameter_agreement' if consistency else 'pending_labelled_trials','各动作模型目标（旧版为校准输入）与实际平滑驱动的同时间配对MAE及相关；不等于真实情绪识别准确率',sum(len(t['channels']) for t in consistency.values()),{'per_trial':consistency,'limitation':'按协议设置的平滑会产生正常相位差；低变异输入的相关系数返回空值'})
     switching=[f for f in results if any(t['action']=='switching' and t['status']=='completed' and t['trial_id']==f.get('trial_id') for t in trials) and f['detected']==1 and f['condition']=='B']
     switch_diffs=[]
     for a,b in zip(switching,switching[1:]):
@@ -186,7 +186,7 @@ def summarize_record(item, annotations):
         if not frame['detected'] and loss_start is None: loss_start=frame['monotonic_ms']
         elif frame['detected'] and loss_start is not None: loss_gaps.append(frame['monotonic_ms']-loss_start);loss_start=None
     pipeline={key:{'median_ms':median(f.get(key) for f in results),'n':sum(finite(f.get(key)) for f in results)} for key in ['inference_ms','frame_to_render_submit_ms','video_present_to_render_submit_ms']}
-    return {'session_id':record['session_id'],'protocol_version':record['protocol_version'],'app_version':record['app_version'],'source_type':'live_camera','input_path':item['path'],'input_sha256':item['sha256'],'metrics':[output[key] for key in METRICS], 'diagnostics':{'pipeline_times':pipeline,'pipeline_note':'这些浏览器管线时间均不是物理端到端延迟。','observed_loss_gap_ms':loss_gaps,'loss_gap_note':'从丢失检测到重获检测的间隔，不是从本人已返回到重获检测的恢复时间。','real_camera_authenticity':'requires_operator_review'}}
+    return {'session_id':record['session_id'],'protocol_version':record['protocol_version'],'app_version':record['app_version'],'model_info':{k:record.get('model_info',{}).get(k) for k in ['id','avatar_key','label','sha256']},'source_type':'live_camera','input_path':item['path'],'input_sha256':item['sha256'],'metrics':[output[key] for key in METRICS], 'diagnostics':{'pipeline_times':pipeline,'pipeline_note':'这些浏览器管线时间均不是物理端到端延迟。','observed_loss_gap_ms':loss_gaps,'loss_gap_note':'从丢失检测到重获检测的间隔，不是从本人已返回到重获检测的恢复时间。','real_camera_authenticity':'requires_operator_review'}}
 
 def write_csv(path,rows,fields):
     with path.open('w',encoding='utf-8-sig',newline='') as handle:

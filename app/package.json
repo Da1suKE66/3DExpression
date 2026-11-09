@@ -1,9 +1,9 @@
 {
   "name": "ipp31078-local-prototype",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
-  "description": "Local facial expressions, head pose and engineering evaluation",
+  "description": "Selectable cartoon characters with full eyelids, head pose and engineering evaluation",
   "scripts": {
     "build": "node ../scripts/build.mjs --package",
     "check": "node ../scripts/build.mjs",

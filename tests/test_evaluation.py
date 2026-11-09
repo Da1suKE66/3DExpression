@@ -10,8 +10,8 @@ import unittest
 from uuid import uuid4
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
-from session_data import validate_tracking, validate_evaluation, LEGACY_PROTOCOL, LEGACY_MODEL
-from evaluate import load_records, summarize_record, video_annotations, run
+from session_data import validate_tracking, validate_evaluation, LEGACY_PROTOCOL, LEGACY_MODEL, PREVIOUS_PROTOCOL, PREVIOUS_MODEL, AVATAR_CATALOG
+from evaluate import load_records, summarize_record, video_annotations, run, paired_channels
 from test_pipeline import fixture
 
 def evaluation_fixture(source='live_camera'):
@@ -25,13 +25,31 @@ def evaluation_fixture(source='live_camera'):
             f['raw_'+key]=0.1+(0.01 if i%2 else 0);f['applied_'+key]=0.1
         tracking['frames'].append(f)
     at=tracking['started_at']
-    trials=[{'trial_id':neutral_id,'action':'neutral','requested_repetitions':0,'started_at':at,'ended_at':at,'start_monotonic_ms':0,'end_monotonic_ms':10000,'status':'completed','observed_successes':None,'observation_method':None}, {'trial_id':jaw_id,'action':'jaw','requested_repetitions':5,'started_at':at,'ended_at':at,'start_monotonic_ms':10000,'end_monotonic_ms':12000,'status':'completed','observed_successes':None,'observation_method':None}]
+    trials=[{'trial_id':neutral_id,'action':'neutral','requested_repetitions':0,'started_at':at,'ended_at':at,'start_monotonic_ms':0,'end_monotonic_ms':10000,'visible_duration_ms':10000,'status':'completed','observed_successes':None,'observation_method':None}, {'trial_id':jaw_id,'action':'jaw','requested_repetitions':5,'started_at':at,'ended_at':at,'start_monotonic_ms':10000,'end_monotonic_ms':12000,'status':'completed','observed_successes':None,'observation_method':None}]
     return {'record_type':'engineering_evaluation','schema_version':'1.0.0','evaluation_protocol':'IPP31078-EVAL-v1','source_type':source,'session_id':sid,'started_at':at,'ended_at':at,'exported_at':at,'status':'complete','tracking':tracking,'trials':trials,'render_count':1440,'visible_duration_ms':12000,'video_quality_start':{'total_video_frames':100,'dropped_video_frames':5},'video_quality_end':{'total_video_frames':400,'dropped_video_frames':8}}
 
 def item_for(data):
     return {'record':data['tracking'],'evaluation':data,'path':'TEMP_SYNTHETIC_FIXTURE.json','sha256':'fixture_only'}
 
 class EvaluationTests(unittest.TestCase):
+    def test_both_characters_require_matching_calibration_and_target_channels(self):
+        for model in AVATAR_CATALOG['avatars']:
+            data=evaluation_fixture();t=data['tracking'];t['model_info'].update(id=model['id'],sha256=model['sha256'],avatar_key=model['key']);t['calibration'].update(avatar_key=model['key'],model_sha256=model['sha256'])
+            self.assertEqual(validate_evaluation(data),[])
+            t['calibration']['avatar_key']='other';self.assertTrue(validate_evaluation(data))
+        data=evaluation_fixture();del data['tracking']['frames'][0]['target_eyeBlinkLeft'];self.assertTrue(validate_evaluation(data))
+    def test_previous_v3_record_remains_valid_without_catalog_or_target_channels(self):
+        data=evaluation_fixture()['tracking'];data.update(app_version=PREVIOUS_PROTOCOL['app_version'],protocol_version=PREVIOUS_PROTOCOL['protocol_version'],parameters=copy.deepcopy(PREVIOUS_PROTOCOL['parameters']),model_info={**PREVIOUS_MODEL,'animation_playback_enabled':False})
+        for f in data['frames']:
+            for key in list(f):
+                if key.startswith('target_'):del f[key]
+        self.assertEqual(validate_tracking(data),[])
+    def test_drive_consistency_compares_smoothed_output_with_rig_target(self):
+        data=evaluation_fixture();frames=data['tracking']['frames'];channels=paired_channels(frames,['eyeBlinkLeft'])
+        self.assertAlmostEqual(channels[0]['mean_absolute_error'],0.35);self.assertEqual(channels[0]['reference'],'rig_target_after_calibration_and_retarget')
+    def test_hidden_wall_time_does_not_qualify_as_stationary_jitter_trial(self):
+        data=evaluation_fixture();data['trials'][0]['visible_duration_ms']=9000
+        m={x['id']:x for x in summarize_record(item_for(data),[])['metrics']};self.assertIsNone(m['expression_jitter']['value'])
     def test_current_schema_and_metadata_validate(self):
         self.assertEqual(validate_evaluation(evaluation_fixture()),[])
     def test_legacy_tracking_remains_valid_without_new_coefficients(self):

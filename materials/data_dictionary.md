@@ -1,6 +1,6 @@
 # IPP31078 数据字典与来源规则
 
-协议IPP31078-AB90-v3，软件0.3.0，JSON结构3.0.0。旧版60秒/5题导出与本版不混合。
+协议IPP31078-AB90-v3.1，软件0.3.1，JSON结构3.0.0。旧版60秒/5题导出与本版不混合。
 
 ## 来源与记录用途
 
@@ -44,7 +44,7 @@
 - active_ms：仅在前台、可用面部且未暂停时累积的有效任务时间；wall_elapsed_ms为条件的墙钟跨度，可能更长。
 - detected：1表示该次结果有面部及完整系数，0表示丢失；丢失原始系数为null，应用系数回中性，不补造有效帧。
 - sample_kind：result为一次实际检测结果，tracking_timeout为结果过期；回放为replay_frame，不当作新推理。
-- raw_*：检测器输出的5个系数；corrected_*：减中性基线并处理死区后系数；applied_*：平滑后实际写入模型的系数。A的应用值始终0。
+- raw_*：检测器输出的17个系数；corrected_*：减中性基线并处理死区后系数；target_*：校准后经闭眼重定向的模型目标；applied_*：平滑后实际写入模型的系数。A的应用值始终0。
 - render_fps：实际渲染调用计数的滑窗速率；tracking_update_hz：实际结果的滑窗更新率；avatar_update_hz：实际形变应用调用的滑窗速率。窗口不足时为null。
 - inference_ms：单次detectForVideo执行耗时，不含采集、显示与传输，不能写成端到端延迟。回放无新推理时为null。
 - calibration.baseline：至少3秒且至少30个有效样本的逐系数中位数。duration_ms是要求的3000ms，observed_duration_ms为实际采样跨度；低更新率时会延长收样，最多15秒。
@@ -62,8 +62,12 @@ materials/engineering_acceptance.csv为人工验收空表。action填写jaw、bl
 
 ## v3与工程评估补充
 
-当前协议为IPP31078-AB90-v3，旧v2记录保留原版本和模型摘要；后端分别校验，问卷分析不混用协议。17个系数及模型映射见app/model_manifest.json。pose_valid标识矩阵是否有效；raw_pose_*为原始旋转，corrected_pose_*为中性基准相对旋转，applied_pose_*为限幅和平滑后旋转，单位弧度。A、B均有相同头部驱动。
+当前协议为IPP31078-AB90-v3.1，旧v2记录保留原版本和模型摘要；后端分别校验，问卷分析不混用协议。17个系数及模型映射见app/model_manifest.json。pose_valid标识矩阵是否有效；raw_pose_*为原始旋转，corrected_pose_*为中性基准相对旋转，applied_pose_*为限幅和平滑后旋转，单位弧度。A、B均有相同头部驱动。
 
 data/raw/evaluations保存engineering_evaluation记录，内含完整tracking、独立trial_id、实际开始/完成时间、人工观察成功次数（可为null）、前台可见计时、实际渲染计数和浏览器视频计数。该记录不写参与者表。评估脚本按每份记录、每个协议分别分析。
 
 frame_to_render_submit_ms与video_present_to_render_submit_ms只在对应帧时钟可用时填写，是浏览器管线时间，不是物理端到端延迟。外部同步录像的帧标注使用video_metric_annotations.csv；未核对实际拍摄帧率或只有浏览器合成视频时不能纳入物理延迟指标。
+
+## v3.1角色与闭眼
+
+model_info包含avatar_key、catalog_id、id及sha256。calibration包含相同avatar_key和model_sha256，后端拒绝角色切换后沿用旧校准。检测有效帧新增17个target_*字段；丢失时raw_*、corrected_*、target_*均为空、applied_*为0。raw/corrected不被闭眼重定向覆盖，保证可复查原始输入。眨眼35ms、其他表情80ms；记录固定阈值及完整参数。参数回放切换至记录指定的角色并验证摘要；旧版本仅由分析脚本分别读取。

@@ -1,10 +1,10 @@
-import { createAvatar } from './avatar.js?v=0.3.0-r2';
-import { CameraTracker } from './tracker.js?v=0.3.0-r2';
-import { DemoRecorder } from './recording.js?v=0.3.0-r2';
-import { TrackingReplay, readTrackingFile } from './replay.js?v=0.3.0-r2';
-import { POSE_AXES, zeroPose, validPose, relativePose, PoseFilter, ACTIONS, actionStrength } from './expressions.js?v=0.3.0-r2';
-import { EngineeringEvaluation } from './evaluation.js?v=0.3.0-r2';
-import { APP_VERSION, PROTOCOL_VERSION, SCHEMA_VERSION, PROJECT_ID, PARAMS, QUESTIONS, COEFFICIENTS, neutral, median, makeCalibration, correctExpression, mapExpression, ExpressionFilter, RateMeter, taskAt, validParticipantId, suggestedOrder, makeSession, StudyController, csv, FRAME_COLUMNS, RATING_COLUMNS } from './core.js?v=0.3.0-r2';
+import { createAvatar } from './avatar.js?v=0.3.1';
+import { CameraTracker } from './tracker.js?v=0.3.1';
+import { DemoRecorder } from './recording.js?v=0.3.1';
+import { TrackingReplay, readTrackingFile } from './replay.js?v=0.3.1';
+import { POSE_AXES, zeroPose, validPose, relativePose, PoseFilter, ACTIONS, actionStrength } from './expressions.js?v=0.3.1';
+import { EngineeringEvaluation } from './evaluation.js?v=0.3.1';
+import { APP_VERSION, PROTOCOL_VERSION, SCHEMA_VERSION, PROJECT_ID, PARAMS, QUESTIONS, COEFFICIENTS, neutral, median, makeCalibration, correctExpression, mapExpression, retargetExpression, ExpressionFilter, RateMeter, taskAt, validParticipantId, suggestedOrder, makeSession, StudyController, csv, FRAME_COLUMNS, RATING_COLUMNS } from './core.js?v=0.3.1';
 
 const el = id => document.getElementById(id);
 const iso = () => new Date().toISOString();
@@ -17,7 +17,7 @@ let avatar, ready = false, loading = false, mode = query.get('mode') === 'demo' 
 let connectionSequence = 0;
 let calibration = null, calibrating = null, study = null, clip = null, replay = null;
 let exported = false, clipExported = true, lastPhase = '', lastTask = '', lastUI = -Infinity;
-let detected = false, lastResultAt = -Infinity, raw = neutral(), corrected = neutral(), filtered = neutral(), applied = neutral();
+let detected = false, lastResultAt = -Infinity, raw = neutral(), corrected = neutral(), targetExpression = neutral(), filtered = neutral(), applied = neutral();
 let recorder = null, recordedVideo = null, lastVideoLabel = -1, frameSequence = 0;
 let lastRenderAt = -Infinity, cameraWasLive = false;
 let rawPose = null, correctedPose = zeroPose(), appliedPose = zeroPose(), pendingFrame = null;
@@ -33,7 +33,7 @@ const viewportMatches = () => !study || (Math.abs(innerWidth - study.session.vie
 function message(text) { el('message').textContent = text; }
 function log(type, details = {}) { const now = performance.now(), at = iso(); if (study) study.event(type, now, at, details); if (clip?.status === 'recording') clip.events.push({ type, at, monotonic_ms: now, ...details }); }
 function renderExpression(now = performance.now()) { applied = mapExpression(tracked() ? filtered : neutral(), condition()); avatar?.apply(applied); avatar?.applyPose(tracked() && (mode === 'demo' || study?.phase === 'running') ? appliedPose : zeroPose()); applyRate.mark(now); }
-function clearSignal() { detected = false; raw = neutral(); corrected = neutral(); filtered = neutral(); rawPose = null; correctedPose = zeroPose(); appliedPose = zeroPose(); filter.reset(); poseFilter.reset(); renderExpression(); }
+function clearSignal() { detected = false; raw = neutral(); corrected = neutral(); targetExpression = neutral(); filtered = neutral(); rawPose = null; correctedPose = zeroPose(); appliedPose = zeroPose(); filter.reset(); poseFilter.reset(); renderExpression(); }
 function sourceLabel() { if (replay) return replay.record.origin === 'synthetic_test' ? '参数回放 · 合成测试来源' : '参数回放 · recorded_tracking'; return testSource ? '软件测试 · synthetic_test' : tracker.live() ? '实时摄像头 · live_camera' : '等待连接'; }
 
 async function startCamera() {
@@ -77,16 +77,25 @@ function calibrationSample(sample) {
   if (calibrating.samples.length < PARAMS.calibration_min_samples && observedDuration < 15000) return;
   try {
     const headBaseline = calibrating.poses.length >= PARAMS.calibration_min_samples ? Object.fromEntries(POSE_AXES.map(axis => [axis, median(calibrating.poses.map(p => p[axis]))])) : null;
-    calibration = makeCalibration(calibrating.samples, { calibration_id: crypto.randomUUID(), source_type: sourceType(), started_at: calibrating.started_at, ended_at: iso(), observed_duration_ms: observedDuration, head_baseline: headBaseline, head_pose_sample_count: calibrating.poses.length });
+    calibration = makeCalibration(calibrating.samples, { calibration_id: crypto.randomUUID(), source_type: sourceType(), started_at: calibrating.started_at, ended_at: iso(), observed_duration_ms: observedDuration, head_baseline: headBaseline, head_pose_sample_count: calibrating.poses.length, avatar_key: avatar.info.avatar_key, model_sha256: avatar.info.sha256 });
     filter.reset(); log('calibration_completed', { sample_count: calibration.sample_count, calibration_id: calibration.calibration_id });
     message('中性校准完成。配置将用于两条件，条件间不再改变。');
   } catch (error) { message(error.message); }
   calibrating = null;
 }
 function switchMode(next) {
-  if (activeStudy() || recorder?.active || clip?.status === 'recording' || evaluation.active) return message('请先结束当前体验、评估或录制。');
+  if (activeStudy() || recorder?.active || recordedVideo || (study && !exported) || (clip && !clipExported) || !evaluation.saved) return message('请先结束当前体验、评估或录制。');
   if (study && !exported) return message('请先保存完整记录或下载JSON，再切换模式。');
   mode = next; filter.reset(); renderExpression(); lastPhase = ''; updateUI(true);
+}
+async function switchAvatar() {
+  if (!avatar) return;
+  const previous = avatar.info.avatar_key, selected = el('avatar-select').value;
+  if (replay || activeStudy() || recorder?.active || recordedVideo || clip?.status === 'recording' || (clip && !clipExported) || (study && !exported) || !evaluation.saved) { el('avatar-select').value = previous; return message('请先结束并保存当前体验、评估或录制，再切换角色。'); }
+  ready = false; calibration = null; calibrating = null; clearSignal(); updateUI(true);
+  try { await avatar.setAvatar(selected); message('已切换为' + avatar.info.label + '。请保持中性，重新校准；摄像头连接会保留。'); }
+  catch (error) { el('avatar-select').value = previous; message('切换角色失败：' + error.message); }
+  finally { ready = true; updateUI(true); }
 }
 function startStudy() {
   if (evaluation.active || clip?.status === 'recording' || recorder?.active) return message('请先结束工程评估或录制。');
@@ -115,7 +124,7 @@ function makeFrame(sample) {
   const now = sample.monotonic_ms;
   const owner = study?.phase === 'running' ? study.session : clip?.status === 'recording' ? clip : null;
   const frame = { session_id: owner?.session_id || null, participant_id: owner?.participant_id || el('participant-id').value.trim(), source_type: sourceType(), condition: condition(), block_index: study?.phase === 'running' ? study.block.block_index : 0, captured_at: iso(), monotonic_ms: Number(now.toFixed(3)), wall_elapsed_ms: study?.phase === 'running' ? Math.round(now - study.block.start_monotonic_ms) : clip?.status === 'recording' ? Math.round(now - clip.start_monotonic_ms) : 0, active_ms: study?.phase === 'running' ? Math.round(study.activeMs) : null, task: study?.phase === 'running' ? taskAt(study.activeMs)?.id || 'finished' : 'demonstration', sample_kind: sample.sample_kind, result_index: sample.sample_kind === 'tracking_timeout' ? null : frameSequence++, detected: Number(sample.detected), paused: Number(Boolean(study?.paused || document.hidden || !sample.detected)), render_fps: renderRate.value(now), tracking_update_hz: resultRate.value(now), avatar_update_hz: applyRate.value(now), inference_ms: sample.inference_ms == null ? null : Number(sample.inference_ms.toFixed(3)) };
-  for (const key of COEFFICIENTS) { frame['raw_' + key] = sample.detected ? raw[key] : null; frame['corrected_' + key] = sample.detected ? corrected[key] : null; frame['applied_' + key] = applied[key]; }
+  for (const key of COEFFICIENTS) { frame['raw_' + key] = sample.detected ? raw[key] : null; frame['corrected_' + key] = sample.detected ? corrected[key] : null; frame['target_' + key] = sample.detected ? targetExpression[key] : null; frame['applied_' + key] = applied[key]; }
   frame.pose_valid = Boolean(sample.detected && validPose(rawPose));
   for (const axis of POSE_AXES) { frame['raw_pose_' + axis] = frame.pose_valid ? rawPose[axis] : null; frame['corrected_pose_' + axis] = sample.detected ? correctedPose[axis] : 0; frame['applied_pose_' + axis] = sample.detected ? appliedPose[axis] : 0; }
   for (const key of ['camera_media_time_s','frame_metadata_matched','frame_capture_at_ms','video_presentation_at_ms','video_frame_callback_at_ms','camera_presented_frames']) frame[key] = sample[key] ?? null;
@@ -126,8 +135,8 @@ function acceptSample(sample) {
   const wasDetected = detected;
   detected = sample.detected; lastResultAt = sample.monotonic_ms;
   if (sample.sample_kind !== 'tracking_timeout') resultRate.mark(sample.monotonic_ms);
-  if (sample.detected) { raw = sample.raw; corrected = correctExpression(raw, calibration?.baseline); filtered = filter.update(corrected, sample.monotonic_ms); rawPose = sample.pose; correctedPose = relativePose(rawPose, calibration?.head_baseline); appliedPose = poseFilter.update(correctedPose, sample.monotonic_ms); }
-  else { raw = neutral(); corrected = neutral(); filtered = neutral(); rawPose = null; correctedPose = zeroPose(); appliedPose = zeroPose(); filter.reset(); poseFilter.reset(); }
+  if (sample.detected) { raw = sample.raw; corrected = correctExpression(raw, calibration?.baseline); targetExpression = retargetExpression(corrected); filtered = filter.update(targetExpression, sample.monotonic_ms); rawPose = sample.pose; correctedPose = relativePose(rawPose, calibration?.head_baseline); appliedPose = poseFilter.update(correctedPose, sample.monotonic_ms); }
+  else { raw = neutral(); corrected = neutral(); targetExpression = neutral(); filtered = neutral(); rawPose = null; correctedPose = zeroPose(); appliedPose = zeroPose(); filter.reset(); poseFilter.reset(); }
   if (wasDetected !== detected) log(detected ? 'tracking_recovered' : 'tracking_lost', { sample_kind: sample.sample_kind });
   calibrationSample(sample); renderExpression(sample.monotonic_ms);
   const frame = makeFrame(sample);
@@ -175,8 +184,8 @@ async function saveVideo() {
 }
 async function loadReplay(event) {
   const file = event.target.files?.[0]; if (!file) return;
-  if (activeStudy() || recorder?.active || clip?.status === 'recording' || evaluation.active) { event.target.value = ''; return message('请先结束当前体验、评估或录制。'); }
-  try { const record = await readTrackingFile(file); stopCamera('replay_loaded'); replay = new TrackingReplay(record); calibration = copy(record.data.calibration); mode = 'demo'; filter.reset(); resultRate.times = []; applyRate.times = []; lastPhase = ''; updateUI(true); message('参数回放已加载。来源标识会一直显示；回放不能参加正式A/B体验。'); }
+  if (activeStudy() || recorder?.active || recordedVideo || (study && !exported) || (clip && !clipExported) || !evaluation.saved) { event.target.value = ''; return message('请先结束当前体验、评估或录制。'); }
+  try { const record = await readTrackingFile(file); await avatar.setAvatar(record.data.model_info.avatar_key); if (avatar.info.sha256 !== record.data.model_info.sha256) throw new Error('回放模型校验和不一致'); stopCamera('replay_loaded'); replay = new TrackingReplay(record); calibration = copy(record.data.calibration); mode = 'demo'; filter.reset(); resultRate.times = []; applyRate.times = []; lastPhase = ''; updateUI(true); message('参数回放已加载。来源标识会一直显示；回放不能参加正式A/B体验。'); }
   catch (error) { message('回放失败：' + error.message); }
   event.target.value = '';
 }
@@ -195,6 +204,8 @@ function updateUI(force = false) {
   const now = performance.now(); if (!force && now - lastUI < 100) return; lastUI = now;
   updatePhase();
   const hasFace = tracked(), live = tracker.live(), locked = Boolean(activeStudy());
+  el('avatar-select').disabled = !ready || loading || locked || Boolean(replay) || Boolean(calibrating) || evaluation.active || !evaluation.saved || Boolean(recorder?.active) || Boolean(recordedVideo) || clip?.status === 'recording' || Boolean(clip && !clipExported) || Boolean(study && !exported);
+  if (avatar) { el('avatar-label').textContent = avatar.info.label; el('avatar-select').value = avatar.info.avatar_key; }
   el('camera-start').disabled = !ready || loading || live || Boolean(replay); el('camera-stop').disabled = !loading && !live;
   el('setup-fields').disabled = locked; el('consent').disabled = locked;
   const canCalibrate = live && hasFace && !locked && !calibrating && !recorder?.active && clip?.status !== 'recording' && !evaluation.active;
@@ -235,7 +246,7 @@ function updateUI(force = false) {
       el('task-title').textContent = '未检测到面部';
       el('task-description').textContent = '请面向镜头，让整张脸进入左下角小窗，并保持光线充足。';
     } else if (demoCondition === 'A') {
-      el('task-title').textContent = 'A：化身保持静态';
+      el('task-title').textContent = 'A：表情保持中性';
       el('task-description').textContent = '点击右上角“B · 实时跟随”，即可查看表情响应。';
     } else {
       el('task-title').textContent = 'B：实时表情跟随';
@@ -285,6 +296,7 @@ el('camera-stop').addEventListener('click', () => { stopCamera('user_camera_stop
 el('consent').addEventListener('change', () => { if (!el('consent').checked && (tracker.live() || loading)) { stopCamera('consent_withdrawn'); message('已撤回体验选择，摄像头与记录已停止。'); } updateUI(true); });
 el('participant-id').addEventListener('input', () => { el('condition-order').value = suggestedOrder(el('participant-id').value.trim()).join(''); updateUI(true); });
 el('mode-study').addEventListener('click', () => switchMode('study')); el('mode-demo').addEventListener('click', () => switchMode('demo'));
+el('avatar-select').addEventListener('change', switchAvatar);
 el('calibrate').addEventListener('click', beginCalibration); el('demo-calibrate').addEventListener('click', beginCalibration); el('study-start').addEventListener('click', startStudy);
 el('study-pause').addEventListener('click', () => { if (!study || study.phase !== 'running') return; if (study.paused && !viewportMatches()) return message(`请先恢复为 ${study.session.viewport.width}×${study.session.viewport.height} 的窗口，再继续体验。`); study.paused = !study.paused; log(study.paused ? 'manual_pause' : 'manual_resume'); updateUI(true); });
 el('study-abort').addEventListener('click', () => { study?.abort('user_ended', performance.now(), iso()); stopCamera('user_ended'); message('本次体验已结束，仍可保存不完整记录。'); });
@@ -308,7 +320,7 @@ el('evaluation-start').addEventListener('click', () => {
 el('trial-start').addEventListener('click', () => { try { const action = el('evaluation-action').value; prepareTrialInputs(action); evaluation.beginTrial(action, performance.now(), iso()); updateUI(true); } catch (error) { message(error.message); } });
 el('trial-finish').addEventListener('click', () => {
   try {
-    if (evaluation.trial?.action === 'neutral' && performance.now() - evaluation.trial.start_monotonic_ms < 10000) return message('中性保持需至少10秒。');
+    if (evaluation.trial?.action === 'neutral' && evaluation.visibleDuration(performance.now()) - evaluation.trial.visible_start_ms < 10000) return message('中性保持需至少10秒前台可见采样。');
     const count = el('trial-observed').value; evaluation.finishTrial(performance.now(), iso(), count === '' ? null : Number(count), el('trial-notes').value.trim());
     const completed = new Set(evaluation.record.trials.filter(trial => trial.status === 'completed').map(trial => trial.action));
     const next = Object.keys(ACTIONS).find(action => !completed.has(action)); if (next) el('evaluation-action').value = next;

@@ -9,18 +9,18 @@ import unittest
 from uuid import uuid4
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
-from session_data import validate_session, COEFFICIENTS, QUESTIONS, PARAMS, MODEL, PROTOCOL, PARTICIPANT_COLUMNS
+from session_data import validate_session, COEFFICIENTS, QUESTIONS, PARAMS, MODEL, PROTOCOL, AVATAR_CATALOG, PARTICIPANT_COLUMNS
 from analyze import run, engineering_metrics
 from evidence_registry import register
 
 def fixture(pid='TEST01',kind='exploratory',source='live_camera',a=6,b=2):
     sid=str(uuid4());at='2026-11-07T01:00:00+08:00'
-    data={'record_type':'study_session','schema_version':PROTOCOL['schema_version'],'project_id':'IPP31078','app_version':PROTOCOL['app_version'],'protocol_version':PROTOCOL['protocol_version'],'session_id':sid,'participant_id':pid,'record_kind':kind,'source_type':source,'consent':True,'started_at':at,'ended_at':at,'exported_at':at,'condition_order':['A','B'],'parameters':copy.deepcopy(PARAMS),'model_info':{'id':MODEL['id'],'sha256':MODEL['sha256'],'animation_playback_enabled':False},'calibration':{'status':'complete','sample_count':40,'duration_ms':3000,'baseline':{key:0.02 for key in COEFFICIENTS},'source_type':source},'status':'complete','conditions':[],'frames':[],'ratings':[],'events':[]}
+    data={'record_type':'study_session','schema_version':PROTOCOL['schema_version'],'project_id':'IPP31078','app_version':PROTOCOL['app_version'],'protocol_version':PROTOCOL['protocol_version'],'session_id':sid,'participant_id':pid,'record_kind':kind,'source_type':source,'consent':True,'started_at':at,'ended_at':at,'exported_at':at,'condition_order':['A','B'],'parameters':copy.deepcopy(PARAMS),'model_info':{'id':MODEL['id'],'sha256':MODEL['sha256'],'avatar_key':MODEL['key'],'catalog_id':AVATAR_CATALOG['id'],'animation_playback_enabled':False},'calibration':{'avatar_key':MODEL['key'],'model_sha256':MODEL['sha256'],'status':'complete','sample_count':40,'duration_ms':3000,'baseline':{key:0.02 for key in COEFFICIENTS},'source_type':source},'status':'complete','conditions':[],'frames':[],'ratings':[],'events':[]}
     for index,condition in enumerate(['A','B'],1):
         data['conditions'].append({'condition':condition,'block_index':index,'active_ms':90000,'status':'completed'})
         for step in range(4):
             frame={'session_id':sid,'participant_id':pid,'source_type':source,'condition':condition,'block_index':index,'captured_at':at,'monotonic_ms':index*100000+step*50,'active_ms':step*50,'detected':1,'paused':0,'sample_kind':'result','inference_ms':8,'render_fps':60,'tracking_update_hz':20,'avatar_update_hz':20,'pose_valid':False,**{'raw_pose_'+axis:None for axis in ['pitch','yaw','roll']},**{'applied_pose_'+axis:0 for axis in ['pitch','yaw','roll']}}
-            for key in COEFFICIENTS:frame['raw_'+key]=0.5;frame['corrected_'+key]=0.45;frame['applied_'+key]=0 if condition=='A' else 0.4
+            for key in COEFFICIENTS:frame['raw_'+key]=0.5;frame['corrected_'+key]=0.45;frame['target_'+key]=0.45;frame['applied_'+key]=0 if condition=='A' else 0.4
             data['frames'].append(frame)
         data['ratings'].append({'participant_id':pid,'session_id':sid,'record_kind':kind,'source_type':source,'protocol_version':PROTOCOL['protocol_version'],'condition_order':'AB','condition':condition,'block_index':index,'submitted_at':at,**{key:a if condition=='A' else b for key in QUESTIONS},'comment':'SYNTHETIC UNIT FIXTURE IN TEMPORARY DIRECTORY ONLY'})
     return data

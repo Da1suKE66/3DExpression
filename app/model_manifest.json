@@ -1,14 +1,16 @@
 {
-  "id": "ipp31078-cartoon-v2",
-  "label": "扩展表情卡通化身",
-  "asset_path": "models/ipp31078-cartoon-v2.glb",
-  "sha256": "2df89649a7e4831f1ef29029a650f7084e3f7e14ddd7ade08b06ff5ac3216350",
-  "bytes": 1543116,
+  "key": "doraemon",
+  "id": "ipp31078-doraemon-v1",
+  "label": "哆啦A梦 · 自制卡通版",
+  "asset_path": "models/doraemon-v1.glb",
+  "sha256": "645c14c688f298fa3996d78677480d012c8d4228fe52ec4a2cb71e8c4954ddc4",
+  "bytes": 1553348,
   "head_pivot": "head_pivot",
-  "creator": "project_created_geometry",
+  "creator": "project_authored_parametric_character_mesh",
   "generator": "scripts/create_avatar.mjs",
   "animation_clips": [],
   "automatic_animation": false,
+  "eyelid_mode": "skin_lids_and_lashline_over_fixed_eyeball",
   "mapping": {
     "jawOpen": "jawOpen",
     "eyeBlinkLeft": "eyeBlinkLeft",
@@ -31,131 +33,280 @@
   "meshes": [
     {
       "mesh": "torso",
-      "vertices": 1189,
-      "morph_target_names": []
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "body"
     },
     {
-      "mesh": "neck",
-      "vertices": 1189,
-      "morph_target_names": []
+      "mesh": "belly",
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "body"
     },
     {
       "mesh": "collar",
-      "vertices": 1189,
-      "morph_target_names": []
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "body"
+    },
+    {
+      "mesh": "bell",
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "body"
+    },
+    {
+      "mesh": "bell_line",
+      "vertices": 259,
+      "morph_target_names": [],
+      "region": "body"
+    },
+    {
+      "mesh": "bell_hole",
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "body"
+    },
+    {
+      "mesh": "pocket",
+      "vertices": 259,
+      "morph_target_names": [],
+      "region": "body"
     },
     {
       "mesh": "head",
-      "vertices": 1189,
+      "vertices": 999,
       "morph_target_names": [
         "jawOpen"
-      ]
+      ],
+      "region": "head"
     },
     {
-      "mesh": "ear_left",
-      "vertices": 1189,
-      "morph_target_names": []
-    },
-    {
-      "mesh": "ear_right",
-      "vertices": 1189,
-      "morph_target_names": []
-    },
-    {
-      "mesh": "hair",
-      "vertices": 1189,
-      "morph_target_names": []
-    },
-    {
-      "mesh": "hair_part",
-      "vertices": 1189,
-      "morph_target_names": []
+      "mesh": "face_patch",
+      "vertices": 999,
+      "morph_target_names": [
+        "jawOpen"
+      ],
+      "region": "head"
     },
     {
       "mesh": "nose",
-      "vertices": 1189,
-      "morph_target_names": []
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "head"
+    },
+    {
+      "mesh": "nose_glint",
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "head"
+    },
+    {
+      "mesh": "nose_line",
+      "vertices": 259,
+      "morph_target_names": [],
+      "region": "head"
+    },
+    {
+      "mesh": "whisker_-1_-1",
+      "vertices": 259,
+      "morph_target_names": [],
+      "region": "head"
+    },
+    {
+      "mesh": "whisker_-1_0",
+      "vertices": 259,
+      "morph_target_names": [],
+      "region": "head"
+    },
+    {
+      "mesh": "whisker_-1_1",
+      "vertices": 259,
+      "morph_target_names": [],
+      "region": "head"
+    },
+    {
+      "mesh": "whisker_1_-1",
+      "vertices": 259,
+      "morph_target_names": [],
+      "region": "head"
+    },
+    {
+      "mesh": "whisker_1_0",
+      "vertices": 259,
+      "morph_target_names": [],
+      "region": "head"
+    },
+    {
+      "mesh": "whisker_1_1",
+      "vertices": 259,
+      "morph_target_names": [],
+      "region": "head"
+    },
+    {
+      "mesh": "arm_left",
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "body"
+    },
+    {
+      "mesh": "hand_left",
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "body"
+    },
+    {
+      "mesh": "foot_left",
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "body"
     },
     {
       "mesh": "eye_left_white",
-      "vertices": 1189,
+      "vertices": 999,
       "morph_target_names": [
-        "eyeBlinkLeft",
         "eyeWideLeft"
-      ]
+      ],
+      "region": "head"
     },
     {
       "mesh": "eye_left_iris",
-      "vertices": 1189,
-      "morph_target_names": [
-        "eyeBlinkLeft",
-        "eyeWideLeft"
-      ]
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "head"
     },
     {
       "mesh": "eye_left_glint",
-      "vertices": 1189,
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "head"
+    },
+    {
+      "mesh": "lid_left_upper",
+      "vertices": 369,
       "morph_target_names": [
         "eyeBlinkLeft",
         "eyeWideLeft"
-      ]
+      ],
+      "region": "head"
+    },
+    {
+      "mesh": "lid_left_lower",
+      "vertices": 369,
+      "morph_target_names": [
+        "eyeBlinkLeft",
+        "eyeWideLeft"
+      ],
+      "region": "head"
+    },
+    {
+      "mesh": "lash_left",
+      "vertices": 259,
+      "morph_target_names": [
+        "eyeBlinkLeft",
+        "eyeWideLeft"
+      ],
+      "region": "head"
     },
     {
       "mesh": "brow_left",
-      "vertices": 1189,
+      "vertices": 999,
       "morph_target_names": [
         "browInnerUp",
         "browOuterUpLeft",
         "browDownLeft"
-      ]
+      ],
+      "region": "head"
+    },
+    {
+      "mesh": "arm_right",
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "body"
+    },
+    {
+      "mesh": "hand_right",
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "body"
+    },
+    {
+      "mesh": "foot_right",
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "body"
     },
     {
       "mesh": "eye_right_white",
-      "vertices": 1189,
+      "vertices": 999,
       "morph_target_names": [
-        "eyeBlinkRight",
         "eyeWideRight"
-      ]
+      ],
+      "region": "head"
     },
     {
       "mesh": "eye_right_iris",
-      "vertices": 1189,
-      "morph_target_names": [
-        "eyeBlinkRight",
-        "eyeWideRight"
-      ]
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "head"
     },
     {
       "mesh": "eye_right_glint",
-      "vertices": 1189,
+      "vertices": 999,
+      "morph_target_names": [],
+      "region": "head"
+    },
+    {
+      "mesh": "lid_right_upper",
+      "vertices": 369,
       "morph_target_names": [
         "eyeBlinkRight",
         "eyeWideRight"
-      ]
+      ],
+      "region": "head"
+    },
+    {
+      "mesh": "lid_right_lower",
+      "vertices": 369,
+      "morph_target_names": [
+        "eyeBlinkRight",
+        "eyeWideRight"
+      ],
+      "region": "head"
+    },
+    {
+      "mesh": "lash_right",
+      "vertices": 259,
+      "morph_target_names": [
+        "eyeBlinkRight",
+        "eyeWideRight"
+      ],
+      "region": "head"
     },
     {
       "mesh": "brow_right",
-      "vertices": 1189,
+      "vertices": 999,
       "morph_target_names": [
         "browInnerUp",
         "browOuterUpRight",
         "browDownRight"
-      ]
+      ],
+      "region": "head"
     },
     {
       "mesh": "mouth",
-      "vertices": 1189,
+      "vertices": 999,
       "morph_target_names": [
         "jawOpen",
+        "mouthPucker",
         "mouthSmileLeft",
         "mouthFrownLeft",
         "mouthPressLeft",
         "mouthSmileRight",
         "mouthFrownRight",
-        "mouthPressRight",
-        "mouthPucker"
-      ]
+        "mouthPressRight"
+      ],
+      "region": "head"
     }
-  ],
-  "source_note": "Original parametric project geometry; Three.js API/GLTFLoader MIT; no Face Cap mesh included."
+  ]
 }

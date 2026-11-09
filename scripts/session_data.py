@@ -15,9 +15,16 @@ PARTICIPANT_COLUMNS = ['participant_id', 'session_id', 'record_kind', 'source_ty
 MODEL = json.loads((ROOT / 'app/model_manifest.json').read_text(encoding='utf-8'))
 LEGACY_PROTOCOL = json.loads((ROOT / 'app/protocol-v2.json').read_text(encoding='utf-8'))
 LEGACY_MODEL = json.loads((ROOT / 'app/model_manifest-v1.json').read_text(encoding='utf-8'))
+PREVIOUS_PROTOCOL = json.loads((ROOT / 'app/protocol-v3.json').read_text(encoding='utf-8'))
+PREVIOUS_MODEL = json.loads((ROOT / 'app/model_manifest-v2.json').read_text(encoding='utf-8'))
+AVATAR_CATALOG = json.loads((ROOT / 'app/avatar_catalog.json').read_text(encoding='utf-8'))
 
 def specification(data):
-    return (LEGACY_PROTOCOL, LEGACY_MODEL) if isinstance(data, dict) and data.get('protocol_version') == LEGACY_PROTOCOL['protocol_version'] else (PROTOCOL, MODEL)
+    if isinstance(data,dict) and data.get('protocol_version') == LEGACY_PROTOCOL['protocol_version']: return LEGACY_PROTOCOL,LEGACY_MODEL
+    if isinstance(data,dict) and data.get('protocol_version') == PREVIOUS_PROTOCOL['protocol_version']: return PREVIOUS_PROTOCOL,PREVIOUS_MODEL
+    model_info = data.get('model_info') if isinstance(data,dict) else None
+    selected = next((m for m in AVATAR_CATALOG['avatars'] if isinstance(model_info,dict) and m['id'] == model_info.get('id')),MODEL)
+    return PROTOCOL,selected
 
 def number(value, low=0, high=1):
     return type(value) in (int, float) and math.isfinite(value) and low <= value <= high
@@ -69,6 +76,11 @@ def base_errors(data, record_type):
     model = data.get('model_info')
     if not isinstance(model, dict) or model.get('id') != model_spec['id'] or model.get('sha256') != model_spec['sha256'] or model.get('animation_playback_enabled') is not False:
         errors.append('化身身份、校验和或动画状态不匹配')
+    if protocol['protocol_version'] == 'IPP31078-AB90-v3.1':
+        if not isinstance(model,dict) or model.get('avatar_key') != model_spec['key'] or model.get('catalog_id') != AVATAR_CATALOG['id']:
+            errors.append('卡通角色选择未正确记录')
+        if not isinstance(calibration,dict) or calibration.get('avatar_key') != model_spec['key'] or calibration.get('model_sha256') != model_spec['sha256']:
+            errors.append('切换角色后尚未重新校准')
     return errors
 
 def frame_errors(data, study=True):
@@ -112,6 +124,10 @@ def frame_errors(data, study=True):
                 errors.append('已检测帧缺少有效系数'); break
             if not frame['detected'] and (raw is not None or corrected is not None):
                 errors.append('丢失帧不能填入虚构原始系数'); break
+            if protocol['protocol_version'] == 'IPP31078-AB90-v3.1':
+                target = frame.get('target_' + key)
+                if (frame['detected'] and not number(target)) or (not frame['detected'] and target is not None):
+                    errors.append('闭眼重定向后的目标系数缺失或越界'); break
         if protocol['schema_version'] == '3.0.0':
             if type(frame.get('pose_valid')) is not bool:
                 errors.append('缺少头部姿态有效性标记'); break

@@ -24,21 +24,23 @@ def prepare(destination):
     destination.mkdir(parents=True,exist_ok=True)
     paths=[*map(Path,TOP),*[Path('scripts')/n for n in SCRIPTS],*[Path('tests')/n for n in TESTS],*[Path('materials')/n for n in MATERIALS]]
     paths += [p.relative_to(ROOT) for p in (ROOT/'app').iterdir() if p.is_file() and p.suffix in ('.js','.json','.css','.html')]
-    paths += [Path('app/models/ipp31078-cartoon-v2.glb'),Path('app/vendor/THREE-LICENSE.txt'),Path('app/vendor/MEDIAPIPE-LICENSE.txt'),Path('evidence/dependency_lock.json'),Path('evidence/model_inspection_v3.json'),Path('evidence/testing/v3/build_report.json'),Path('evidence/testing/v3/browser_render_check.json')]
+    catalog=json.loads((ROOT/'app/avatar_catalog.json').read_text())
+    paths += [Path('app')/model['asset_path'] for model in catalog['avatars']]
+    paths += [Path('app/vendor/THREE-LICENSE.txt'),Path('app/vendor/MEDIAPIPE-LICENSE.txt'),Path('evidence/dependency_lock.json'),Path('evidence/model_inspection_v3_1.json'),Path('evidence/testing/v3_1/build_report.json'),Path('evidence/testing/v3_1/browser_render_check.json')]
     paths += [p.relative_to(ROOT) for p in (ROOT/'portable').iterdir() if p.is_file()]
     for rel in paths:
         source=ROOT/rel
         if source.is_symlink() or not source.is_file():raise ValueError('发布文件不存在或不是普通文件：'+str(rel))
         target=destination/rel;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source,target)
-    for name in ['SYNTHETIC_sad.jpg','SYNTHETIC_surprise.jpg','SYNTHETIC_sad_rotation.jpg']:
-        target=destination/'docs/assets'/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(ROOT/'evidence/testing/v3'/name,target)
+    for name in ['SYNTHETIC_doraemon.jpg','SYNTHETIC_doraemon_closed.jpg','SYNTHETIC_pikachu.jpg','SYNTHETIC_pikachu_closed.jpg']:
+        target=destination/'docs/assets'/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(ROOT/'evidence/testing/v3_1'/name,target)
     for name in ['engineering_acceptance.csv','video_metric_annotations.csv']:
-        source=ROOT/'materials'/name
+        source=(ROOT/'templates'/name) if (ROOT/'templates'/name).exists() else ROOT/'materials'/name
         with source.open(encoding='utf-8-sig',newline='') as handle:fields=next(csv.reader(handle))
         template=destination/'templates'/name;template.parent.mkdir(parents=True,exist_ok=True)
         with template.open('w',encoding='utf-8-sig',newline='') as handle:csv.writer(handle).writerow(fields)
     raw=destination/'data/raw';raw.mkdir(parents=True)
-    with (ROOT/'data/raw/participants.csv').open(encoding='utf-8-sig',newline='') as handle:fields=next(csv.reader(handle))
+    with (ROOT/'templates/participants.csv').open(encoding='utf-8-sig',newline='') as handle:fields=next(csv.reader(handle))
     with (destination/'templates/participants.csv').open('w',encoding='utf-8-sig',newline='') as handle:csv.writer(handle).writerow(fields)
     (raw/'README.md').write_text('# 本机原始数据\n\n只随仓库提供空表。真实记录、录像和参与者数据保存在本机，不提交到Git。\n')
     (destination/'.gitignore').write_text('''# Local runtime and private data
@@ -62,7 +64,7 @@ media/
 evidence/live_*/
 evidence/history/
 evidence/publish_*/
-evidence/testing/v3/sessions/
+evidence/testing/*/sessions/
 delivery/
 input/
 *.doc
@@ -74,7 +76,7 @@ MIGRATION_MANIFEST.json
 ''')
     # Filled operational tables stay ignored; only templates are versioned.
     (destination/'.gitattributes').write_text('*.command text eol=lf\n*.bat text eol=crlf\n*.glb binary\n*.whl binary\n*.jpg binary\n')
-    (destination/'tests/README.md').write_text('# 检查\n\n先下载固定运行资产，然后运行README中的20项JS和36项Python检查。夹具只写临时目录或明确标记的synthetic_test目录，不写成真人数据。软件形变检查页不请求真人摄像头。\n')
+    (destination/'tests/README.md').write_text('# 检查\n\n先下载固定运行资产，然后运行README中的JS和Python检查。夹具只写临时目录或明确标记的synthetic_test目录，不写成真人数据。软件形变检查页不请求真人摄像头。\n')
     files=[]
     for path in sorted(destination.rglob('*')):
         if not path.is_file():continue
@@ -84,7 +86,7 @@ MIGRATION_MANIFEST.json
             with path.open(encoding='utf-8-sig',newline='') as handle:
                 if list(csv.DictReader(handle)):raise ValueError('发布模板中有实际数据：'+rel)
         data=path.read_bytes();files.append({'path':rel,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'mode':'100755' if path.suffix=='.command' else '100644'})
-    manifest={'repository':'Da1suKE66/3DExpression','source_version':'0.3.0','scope':'source_model_blank_templates_and_synthetic_software_evidence_only','human_data_included':False,'files':files,'file_count':len(files),'bytes':sum(f['bytes'] for f in files)}
+    manifest={'repository':'Da1suKE66/3DExpression','source_version':'0.3.1','scope':'source_model_blank_templates_and_synthetic_software_evidence_only','human_data_included':False,'files':files,'file_count':len(files),'bytes':sum(f['bytes'] for f in files)}
     return manifest
 
 if __name__=='__main__':

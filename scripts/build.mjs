@@ -9,23 +9,32 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const checks = [];
 const assert = (name, result, detail = null) => { checks.push({ name, passed: Boolean(result), detail }); if (!result) throw new Error(name + ': ' + JSON.stringify(detail)); };
-await fs.mkdir(path.join(root, 'evidence/testing/v3'), { recursive: true });
+await fs.mkdir(path.join(root, 'evidence/testing/v3_1'), { recursive: true });
 try {
   const protocol = { app_version: APP_VERSION, schema_version: SCHEMA_VERSION, protocol_version: PROTOCOL_VERSION, project_id: PROJECT_ID, official_title: OFFICIAL_TITLE, parameters: PARAMS, tasks: TASKS, coefficients: COEFFICIENTS, questions: QUESTIONS };
   await fs.writeFile(path.join(root, 'app/protocol.json'), JSON.stringify(protocol, null, 2) + '\n');
   assert('90_second_identical_task_plan', TASKS.reduce((sum, task) => sum + task.duration_ms, 0) === 90000);
   const lock = JSON.parse(await fs.readFile(path.join(root, 'evidence/dependency_lock.json'), 'utf8'));
   for (const item of lock.files) assert('dependency_' + item.path, hash(await fs.readFile(path.join(root, item.path))) === item.sha256);
-  const manifest = JSON.parse(await fs.readFile(path.join(root, 'app/model_manifest.json'), 'utf8'));
+  const catalog = JSON.parse(await fs.readFile(path.join(root, 'app/avatar_catalog.json'), 'utf8'));
+  assert('two_distinct_character_choices', catalog.avatars.length === 2 && new Set(catalog.avatars.map(item => item.key)).size === 2);
+  const inspections = [];
+  let actualNames = [];
+  for (const manifest of catalog.avatars) {
   const glb = await fs.readFile(path.join(root, 'app', manifest.asset_path));
   assert('model_binary_hash', hash(glb) === manifest.sha256);
   assert('valid_glb_header', glb.readUInt32LE(0) === 0x46546c67 && glb.readUInt32LE(4) === 2 && glb.readUInt32LE(8) === glb.length);
   const jsonSize = glb.readUInt32LE(12);
   const model = JSON.parse(glb.subarray(20, 20 + jsonSize).toString());
   const binaryStart = 20 + jsonSize + 8;
-  const actualNames = [...new Set(model.meshes.flatMap(mesh => mesh.extras?.targetNames || []))];
+  actualNames = [...new Set(model.meshes.flatMap(mesh => mesh.extras?.targetNames || []))];
   assert('actual_morph_target_names', COEFFICIENTS.every(key => actualNames.includes(manifest.mapping[key])), actualNames);
   assert('no_example_animation', !model.animations?.length && manifest.automatic_animation === false);
+  assert('head_pivot_' + manifest.key, model.nodes.some(node => node.name === manifest.head_pivot));
+  for (const side of ['left', 'right']) {
+    assert('fixed_eyeball_' + manifest.key + '_' + side, model.meshes.filter(mesh => new RegExp('^eye_' + side + '_').test(mesh.name)).every(mesh => !(mesh.extras?.targetNames || []).some(name => name.startsWith('eyeBlink'))));
+    assert('actual_lids_and_lash_' + manifest.key + '_' + side, ['lid_' + side + '_upper','lid_' + side + '_lower','lash_' + side].every(name => model.meshes.some(mesh => mesh.name === name && mesh.extras?.targetNames.includes('eyeBlink' + side[0].toUpperCase() + side.slice(1)))));
+  }
   const morphChecks = [];
   for (const coefficient of COEFFICIENTS) {
     let nonzero = 0;
@@ -41,14 +50,16 @@ try {
     morphChecks.push({ coefficient, changed_components: nonzero });
   }
   const inspection = { inspected_at: new Date().toISOString(), asset: 'app/' + manifest.asset_path, sha256: manifest.sha256, mesh_count: model.meshes.length, actual_morph_names: actualNames, mapping: manifest.mapping, animation_clip_count: model.animations?.length || 0, animation_playback_enabled: false, morph_checks: morphChecks, meshes: model.meshes.map(mesh => ({ name: mesh.name, morph_names: mesh.extras?.targetNames || [] })) };
-  await fs.writeFile(path.join(root, 'evidence/model_inspection_v3.json'), JSON.stringify(inspection, null, 2) + '\n');
+  inspections.push(inspection);
+  }
+  await fs.writeFile(path.join(root, 'evidence/model_inspection_v3_1.json'), JSON.stringify({catalog_id:catalog.id, avatars:inspections}, null, 2) + '\n');
   const sourceFiles = (await fs.readdir(path.join(root, 'app'))).filter(name => name.endsWith('.js'));
   for (const name of sourceFiles) { const checked = spawnSync(process.execPath, ['--check', path.join(root, 'app', name)], { encoding: 'utf8' }); assert('syntax_' + name, checked.status === 0, checked.stderr || null); }
   const html = await fs.readFile(path.join(root, 'app/index.html'), 'utf8');
   assert('local_three_import_map', html.includes('"three":"./vendor/three.module.js"'));
   assert('no_remote_page_assets', !/(?:src|href)=["']https?:\/\//.test(html));
   if (process.argv.includes('--package')) {
-    const destination = path.join(root, 'delivery/IPP31078-prototype-v0.3.0');
+    const destination = path.join(root, 'delivery/IPP31078-prototype-v0.3.1');
     try { const existing = await fs.readFile(path.join(destination, 'data/raw/participants.csv'), 'utf8'); if (existing.trim().split(/\r?\n/).length > 1) throw new Error('交付目录已有采集数据，请先完整归档，构建不会覆盖该记录表。'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
     await fs.mkdir(destination, { recursive: true });
     await fs.cp(path.join(root, 'app'), path.join(destination, 'app'), { recursive: true });
@@ -65,9 +76,9 @@ try {
     await fs.copyFile(path.join(root, 'evidence/dependency_lock.json'), path.join(destination, 'evidence/dependency_lock.json'));
     await fs.copyFile(path.join(root, 'ASSET_SOURCES.md'), path.join(destination, 'ASSET_SOURCES.md'));
     for (const name of ['启动原型.command', '安装环境.command', '运行分析.command', '构建检查.command']) await fs.chmod(path.join(destination, name), 0o755);
-    assert('portable_package_created', true, 'delivery/IPP31078-prototype-v0.3.0');
+    assert('portable_package_created', true, 'delivery/IPP31078-prototype-v0.3.1');
   }
   const report = { built_at: new Date().toISOString(), app_version: APP_VERSION, protocol_version: PROTOCOL_VERSION, overall: 'passed', check_count: checks.length, checks, build_type: 'offline_static_assets_with_local_python_service', packaged: process.argv.includes('--package') };
-  await fs.writeFile(path.join(root, 'evidence/testing/v3/build_report.json'), JSON.stringify(report, null, 2) + '\n');
+  await fs.writeFile(path.join(root, 'evidence/testing/v3_1/build_report.json'), JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify({ overall: report.overall, checks: checks.length, model_morphs: actualNames, packaged: report.packaged }, null, 2));
-} catch (error) { await fs.writeFile(path.join(root, 'evidence/testing/v3/build_report.json'), JSON.stringify({ overall: 'failed', checks, error: error.stack }, null, 2) + '\n'); console.error(error.stack); process.exitCode = 1; }
+} catch (error) { await fs.writeFile(path.join(root, 'evidence/testing/v3_1/build_report.json'), JSON.stringify({ overall: 'failed', checks, error: error.stack }, null, 2) + '\n'); console.error(error.stack); process.exitCode = 1; }

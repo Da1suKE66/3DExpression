@@ -1,5 +1,5 @@
-import { COEFFICIENTS, PARAMS, clamp } from './core.js?v=0.3.0-r2';
-import { poseFromMatrix } from './expressions.js?v=0.3.0-r2';
+import { COEFFICIENTS, PARAMS, clamp } from './core.js?v=0.3.1';
+import { poseFromMatrix } from './expressions.js?v=0.3.1';
 
 export class CameraTracker {
   constructor(video, status) { this.video = video; this.status = status; this.stream = null; this.model = null; this.modelPromise = null; this.token = 0; this.lastVideoTime = -1; this.lastInference = -Infinity; this.categoryNames = []; this.frameCallback = null; this.frameMetadata = null; this.callbackCount = 0; this.missedCallbacks = 0; this.lastPresented = null; }

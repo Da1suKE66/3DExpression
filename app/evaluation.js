@@ -1,4 +1,4 @@
-import { ACTIONS } from './expressions.js?v=0.3.0-r2';
+import { ACTIONS } from './expressions.js?v=0.3.1';
 
 // A separate engineering capture. An unscored trial never becomes a success.
 export class EngineeringEvaluation {
@@ -6,6 +6,7 @@ export class EngineeringEvaluation {
   start(now, at, quality) {
     if (this.active || (this.record && !this.saved)) throw new Error('请先结束并保存上一份评估。');
     const tracking = this.makeTrackingRecord();
+    tracking.started_at = at; tracking.start_monotonic_ms = now;
     this.record = { record_type: 'engineering_evaluation', schema_version: '1.0.0', evaluation_protocol: 'IPP31078-EVAL-v1', source_type: tracking.source_type, session_id: tracking.session_id, started_at: at, ended_at: null, status: 'in_progress', tracking, trials: [], visibility_events: [], render_count: 0, visible_duration_ms: 0, video_quality_start: quality, video_quality_end: null, measurement_note: 'Browser capture/presentation to render submission is a pipeline proxy, not physical end-to-end latency. Manual observations are never inferred from coefficients.' };
     this.active = true; this.saved = false; this.trial = null; this.visibleMs = 0; this.visibleSince = now;
   }
@@ -24,6 +25,7 @@ export class EngineeringEvaluation {
   }
   finishTrial(now, at, observed = null, notes = '', reason = 'user_completed') {
     if (!this.trial) throw new Error('当前没有正在检查的动作。');
+    if (reason === 'user_completed' && this.trial.action === 'neutral' && this.visibleDuration(now) - this.trial.visible_start_ms < 10000) throw new Error('中性保持需至少10秒前台可见采样。');
     if (observed !== null && (!Number.isInteger(observed) || observed < 0 || observed > this.trial.requested_repetitions)) throw new Error('观察成功次数须在本项要求次数范围内；未核对请留空。');
     Object.assign(this.trial, { ended_at: at, end_monotonic_ms: now, visible_duration_ms: this.visibleDuration(now) - this.trial.visible_start_ms, wall_completion_ms: now - this.trial.start_monotonic_ms, observed_successes: observed, observation_method: observed === null ? null : 'operator_visual_count', notes, status: reason === 'user_completed' ? 'completed' : 'interrupted', end_reason: reason });
     this.trial = null;
@@ -54,7 +56,7 @@ export class EngineeringEvaluation {
     el('evaluation-stop').disabled = !this.active;
     el('evaluation-save').disabled = this.active || !this.record?.tracking.frames.length;
     el('trial-start').disabled = !this.active || Boolean(this.trial) || !ready;
-    el('trial-finish').disabled = !this.active || !this.trial || (this.trial.action === 'neutral' && now - this.trial.start_monotonic_ms < 10000);
+    el('trial-finish').disabled = !this.active || !this.trial || (this.trial.action === 'neutral' && this.visibleDuration(now) - this.trial.visible_start_ms < 10000);
     el('evaluation-action').disabled = !this.active || Boolean(this.trial);
     el('trial-observed').disabled = !this.trial || this.trial.requested_repetitions === 0;
     el('trial-notes').disabled = !this.trial;

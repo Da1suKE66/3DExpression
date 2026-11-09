@@ -1,0 +1,986 @@
+{
+  "version": "0.3.1",
+  "checked_at": "2026-11-09T11:37:17.697Z",
+  "source_type": "synthetic_test",
+  "camera_requested": false,
+  "overall": "passed",
+  "cases": [
+    {
+      "avatar": "doraemon",
+      "preset": "neutral",
+      "source": "synthetic_test",
+      "active_coefficients": {},
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "doraemon",
+      "preset": "blink",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "eyeBlinkLeft": 1,
+        "eyeBlinkRight": 1
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": false
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": false
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": false
+        },
+        {
+          "name": "eye_right_white",
+          "visible": false
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": false
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": false
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "doraemon",
+      "preset": "wink",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "eyeBlinkLeft": 1
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": false
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": false
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": false
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "doraemon",
+      "preset": "sad",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "mouthFrownLeft": 0.85,
+        "mouthFrownRight": 0.85,
+        "browInnerUp": 0.68
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "doraemon",
+      "preset": "surprise",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "jawOpen": 0.595,
+        "browInnerUp": 0.425,
+        "browOuterUpLeft": 0.85,
+        "browOuterUpRight": 0.85,
+        "eyeWideLeft": 0.85,
+        "eyeWideRight": 0.85
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "doraemon",
+      "preset": "mixed",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "mouthFrownLeft": 0.85,
+        "mouthFrownRight": 0.85,
+        "browInnerUp": 0.68
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0.519235452468313,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "pikachu",
+      "preset": "neutral",
+      "source": "synthetic_test",
+      "active_coefficients": {},
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "pikachu",
+      "preset": "wink",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "eyeBlinkLeft": 1
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": false
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": false
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": false
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "pikachu",
+      "preset": "sad",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "mouthFrownLeft": 0.85,
+        "mouthFrownRight": 0.85,
+        "browInnerUp": 0.68
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "pikachu",
+      "preset": "surprise",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "jawOpen": 0.595,
+        "browInnerUp": 0.425,
+        "browOuterUpLeft": 0.85,
+        "browOuterUpRight": 0.85,
+        "eyeWideLeft": 0.85,
+        "eyeWideRight": 0.85
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "pikachu",
+      "preset": "mixed",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "mouthFrownLeft": 0.85,
+        "mouthFrownRight": 0.85,
+        "browInnerUp": 0.68
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0.519235452468313,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "pikachu",
+      "preset": "blink",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "eyeBlinkLeft": 1,
+        "eyeBlinkRight": 1
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": false
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": false
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": false
+        },
+        {
+          "name": "eye_right_white",
+          "visible": false
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": false
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": false
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "pikachu",
+      "preset": "jaw",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "jawOpen": 0.85
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "pikachu",
+      "preset": "smile",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "mouthSmileLeft": 0.85,
+        "mouthSmileRight": 0.85
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "pikachu",
+      "preset": "angry",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "browDownLeft": 0.85,
+        "browDownRight": 0.85,
+        "mouthPressLeft": 0.68,
+        "mouthPressRight": 0.68
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "pikachu",
+      "preset": "pucker",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "mouthPucker": 0.85
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "pikachu",
+      "preset": "pitch",
+      "source": "synthetic_test",
+      "active_coefficients": {},
+      "head_pose_rad": {
+        "pitch": 0.370882466048795,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "pikachu",
+      "preset": "roll",
+      "source": "synthetic_test",
+      "active_coefficients": {},
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0.296705972839036
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "doraemon",
+      "preset": "jaw",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "jawOpen": 0.85
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "doraemon",
+      "preset": "smile",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "mouthSmileLeft": 0.85,
+        "mouthSmileRight": 0.85
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "doraemon",
+      "preset": "angry",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "browDownLeft": 0.85,
+        "browDownRight": 0.85,
+        "mouthPressLeft": 0.68,
+        "mouthPressRight": 0.68
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "doraemon",
+      "preset": "pucker",
+      "source": "synthetic_test",
+      "active_coefficients": {
+        "mouthPucker": 0.85
+      },
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "doraemon",
+      "preset": "pitch",
+      "source": "synthetic_test",
+      "active_coefficients": {},
+      "head_pose_rad": {
+        "pitch": 0.370882466048795,
+        "yaw": 0,
+        "roll": 0
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    },
+    {
+      "avatar": "doraemon",
+      "preset": "roll",
+      "source": "synthetic_test",
+      "active_coefficients": {},
+      "head_pose_rad": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0.296705972839036
+      },
+      "eyes": [
+        {
+          "name": "eye_left_white",
+          "visible": true
+        },
+        {
+          "name": "eye_left_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_left_glint",
+          "visible": true
+        },
+        {
+          "name": "eye_right_white",
+          "visible": true
+        },
+        {
+          "name": "eye_right_iris",
+          "visible": true
+        },
+        {
+          "name": "eye_right_glint",
+          "visible": true
+        }
+      ],
+      "animation_clips": 0
+    }
+  ],
+  "notes": "Both character meshes rendered using manual UI presets. Eyeball visibility verified from rendered inspection UI. Human following and physical latency require separate acceptance."
+}

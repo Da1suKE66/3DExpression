@@ -1,6 +1,6 @@
-import { EXTENDED_COEFFICIENTS, POSE_LIMITS } from './expressions.js?v=0.3.0-r2';
-export const APP_VERSION = '0.3.0';
-export const PROTOCOL_VERSION = 'IPP31078-AB90-v3';
+import { EXTENDED_COEFFICIENTS, POSE_LIMITS } from './expressions.js?v=0.3.1';
+export const APP_VERSION = '0.3.1';
+export const PROTOCOL_VERSION = 'IPP31078-AB90-v3.1';
 export const SCHEMA_VERSION = '3.0.0';
 export const PROJECT_ID = 'IPP31078';
 export const OFFICIAL_TITLE = '基于面部识别跟踪技术探究化身面部表情对于用户具身感的影响';
@@ -21,12 +21,14 @@ export const PARAMS = Object.freeze({
   duration_ms: 90000, rest_ms: 15000, calibration_ms: 3000, calibration_min_samples: 30,
   inference_interval_ms: 40, tracking_stale_ms: 400, smoothing_tau_ms: 80,
   deadzone: 0.015, max_timer_step_ms: 100, max_pixel_ratio: 1.5,
+  blink_mapping: Object.freeze({ open_threshold: 0.08, closed_threshold: 0.55, hide_eyeball_threshold: 0.82, priority_over_eye_wide: true }),
+  coefficient_smoothing_tau_ms: Object.freeze({ eyeBlinkLeft: 35, eyeBlinkRight: 35 }),
   gain: Object.freeze(Object.fromEntries(COEFFICIENTS.map(key => [key, 1]))),
   head_tracking: true, head_tracking_conditions: 'identical_in_A_and_B', head_rotation_limits_rad: POSE_LIMITS,
   head_smoothing_tau_ms: 100, show_camera_in_study: false, outside_task_face: 'neutral',
   camera_constraints: Object.freeze({ width_ideal: 640, height_ideal: 480, frame_rate_ideal: 30, frame_rate_max: 30, facing_mode: 'user' }),
   condition_mapping: Object.freeze({ A: 'static_neutral', B: 'live_synchronous' }),
-  avatar_id: 'ipp31078-cartoon-v2', camera_pose: [0, 0.08, 6.4], background: '#edf2f1',
+  avatar_id: 'ipp31078-character-catalog-v1', camera_pose: [0, 0.08, 7.1], background: '#edf2f1',
 });
 export const DURATION_MS = PARAMS.duration_ms;
 export const SOURCE_TYPES = Object.freeze(['live_camera', 'recorded_tracking', 'synthetic_test']);
@@ -46,10 +48,19 @@ export function correctExpression(raw, baseline = neutral()) {
   return Object.fromEntries(COEFFICIENTS.map(key => { const b = clamp(baseline[key]); return [key, clamp((clamp(raw[key]) - b - PARAMS.deadzone) / Math.max(0.1, 1 - b - PARAMS.deadzone)) * PARAMS.gain[key]]; }));
 }
 export function mapExpression(expression, condition) { if (!['A', 'B'].includes(condition)) throw new Error('未知条件'); return condition === 'A' ? neutral() : Object.fromEntries(COEFFICIENTS.map(key => [key, clamp(expression[key])])); }
+export function retargetExpression(expression) {
+  const target = Object.fromEntries(COEFFICIENTS.map(key => [key, clamp(expression[key])]));
+  for (const side of ['Left','Right']) {
+    const t = clamp((target['eyeBlink'+side] - PARAMS.blink_mapping.open_threshold) / (PARAMS.blink_mapping.closed_threshold - PARAMS.blink_mapping.open_threshold));
+    target['eyeBlink'+side] = t*t*(3-2*t);
+    target['eyeWide'+side] *= 1-target['eyeBlink'+side];
+  }
+  return target;
+}
 export class ExpressionFilter {
   constructor() { this.reset(); }
   reset() { this.value = neutral(); this.last = null; }
-  update(target, now) { const dt = this.last === null ? PARAMS.inference_interval_ms : Math.max(1, Math.min(250, now - this.last)); this.last = now; const alpha = 1 - Math.exp(-dt / PARAMS.smoothing_tau_ms); this.value = Object.fromEntries(COEFFICIENTS.map(key => [key, this.value[key] + alpha * (clamp(target[key]) - this.value[key])])); return { ...this.value }; }
+  update(target, now) { const dt = this.last === null ? PARAMS.inference_interval_ms : Math.max(1, Math.min(250, now - this.last)); this.last = now; this.value = Object.fromEntries(COEFFICIENTS.map(key => { const alpha = 1 - Math.exp(-dt / (PARAMS.coefficient_smoothing_tau_ms[key] || PARAMS.smoothing_tau_ms)); return [key, this.value[key] + alpha * (clamp(target[key]) - this.value[key])]; })); return { ...this.value }; }
 }
 export class RateMeter {
   constructor(windowMs = 2000) { this.windowMs = windowMs; this.times = []; }
@@ -105,5 +116,5 @@ export function csv(rows, columns) {
   const safe = value => { let text = value == null ? '' : String(value); if (typeof value === 'string' && /^[=+\-@\t\r]/.test(text)) text = "'" + text; return '"' + text.replaceAll('"', '""') + '"'; };
   return '\uFEFF' + [columns.map(safe).join(','), ...rows.map(row => columns.map(key => safe(row[key])).join(','))].join('\r\n') + '\r\n';
 }
-export const FRAME_COLUMNS = ['session_id', 'participant_id', 'source_type', 'condition', 'block_index', 'captured_at', 'monotonic_ms', 'wall_elapsed_ms', 'active_ms', 'task', 'detected', 'paused', 'render_fps', 'tracking_update_hz', 'avatar_update_hz', 'inference_ms', 'frame_to_render_submit_ms', 'video_present_to_render_submit_ms', 'render_submitted_at_ms', 'pose_valid', ...['pitch','yaw','roll'].flatMap(k => ['raw_pose_' + k, 'corrected_pose_' + k, 'applied_pose_' + k]), ...COEFFICIENTS.flatMap(k => ['raw_' + k, 'corrected_' + k, 'applied_' + k])];
+export const FRAME_COLUMNS = ['session_id', 'participant_id', 'source_type', 'condition', 'block_index', 'captured_at', 'monotonic_ms', 'wall_elapsed_ms', 'active_ms', 'task', 'detected', 'paused', 'render_fps', 'tracking_update_hz', 'avatar_update_hz', 'inference_ms', 'frame_to_render_submit_ms', 'video_present_to_render_submit_ms', 'render_submitted_at_ms', 'pose_valid', ...['pitch','yaw','roll'].flatMap(k => ['raw_pose_' + k, 'corrected_pose_' + k, 'applied_pose_' + k]), ...COEFFICIENTS.flatMap(k => ['raw_' + k, 'corrected_' + k, 'target_' + k, 'applied_' + k])];
 export const RATING_COLUMNS = ['session_id', 'participant_id', 'record_kind', 'source_type', 'protocol_version', 'condition_order', 'condition', 'block_index', 'submitted_at', ...QUESTIONS.map(q => q.id), 'comment'];

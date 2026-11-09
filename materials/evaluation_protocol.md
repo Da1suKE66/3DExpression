@@ -1,6 +1,6 @@
 # 扩展表情与头部跟随的工程评估
 
-软件0.3.0，参数/问卷协议IPP31078-AB90-v3，工程评估协议IPP31078-EVAL-v1。图中共12项：系统性能7项、交互行为5项。工程评估不代替具身感问卷，不增加外部参与者人数。
+软件0.3.1，参数/问卷协议IPP31078-AB90-v3.1，工程评估协议IPP31078-EVAL-v1。图中共12项：系统性能7项、交互行为5项。工程评估不代替具身感问卷，不增加外部参与者人数。
 
 ## 功能与对照
 
@@ -33,7 +33,7 @@
 | 交互行为 | 表情响应时间 | 同步录像标注某次表情输入开始与输出开始，按实际拍摄帧率换算 | 与按钮任务用时分开；单次推理耗时不代替表情响应时间 |
 | 交互行为 | 连续动作切换稳定性 | 切换任务中的应用系数相邻差分RMS、跟踪丢失、人工异常备注 | 是信号描述量，动作本身也会变化；没有预设通过阈值，不直接判定用户体验稳定 |
 | 交互行为 | 用户任务完成时间 | 每项真实开始/完成事件的墙钟差，另列可见时间 | 不能把固定脚本时长当成用户完成用时 |
-| 交互行为 | 不同表情驱动一致性 | 已标记动作中，各通道校准输入与平滑应用系数的配对MAE、Pearson相关，逐动作报告 | 80ms平滑有正常相位差，低变异返回空相关；不是情绪识别准确率 |
+| 交互行为 | 不同表情驱动一致性 | 已标记动作中，各通道模型目标与平滑应用系数的配对MAE、Pearson相关，逐动作报告 | 眨眼35ms、其余80ms平滑有正常相位差，低变异返回空相关；不是情绪识别准确率 |
 
 另记录`inference_ms`、`frame_to_render_submit_ms`与`video_present_to_render_submit_ms`：分别为计算时间、浏览器提供captureTime时到渲染提交的管线时间、视频合成提交到渲染提交的时间。只在回调mediaTime与本次推理帧匹配时关联时钟；没有captureTime时不臆造相机时间。三者都不是物理glass-to-glass端到端延迟。
 
@@ -47,3 +47,7 @@
 - 结果同时给出按两帧估计的量化误差界`2000/fps`毫秒。变帧率、插帧、剪辑、慢动作时间轴转换或看不清动作边界时应保留原件、标明限制，不填写虚构的精确毫秒数。
 
 来源： [MediaPipe Face Landmarker](https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker?tab=Web)、[Three.js r160摄像头形变例程](https://github.com/mrdoob/three.js/blob/r160/examples/webgl_morphtargets_webcam.html)、[requestVideoFrameCallback](https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/requestVideoFrameCallback)、[getVideoPlaybackQuality](https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/getVideoPlaybackQuality)。依赖继续使用已锁定的本地版本，未升级SDK或采用Face Cap网格。
+
+## v3.1记录边界
+
+两个角色分别按记录的模型身份报告，不混合为单一角色验收。校准后眨眼经固定阈值重定向，驱动一致性使用target_*对applied_*，旧记录无target_*时使用corrected_*并标注参照。中性任务必须累计至少10秒前台可见时间，后台墙钟时间不满足中性抖动采样条件。角色切换前须保存现有记录，切换后重新校准。v2、v3.0及v3.1的协议和模型信息均保留，旧数据原件不改写。

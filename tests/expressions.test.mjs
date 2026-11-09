@@ -50,3 +50,12 @@ test('invalid observation counts reject and an unfinished trial stays interrupte
   assert.throws(()=>run.finishTrial(100,'end',6));assert.throws(()=>run.finishTrial(100,'end',1.5));
   run.stop(1000,'end',{});assert.equal(run.record.trials[0].status,'interrupted');assert.equal(run.record.trials[0].observed_successes,null);
 });
+
+
+test('neutral trial needs ten visible seconds and evaluation uses one clock anchor',()=>{
+ const run=new EngineeringEvaluation(makeRecord);run.start(500,'same-anchor',{});
+ assert.equal(run.record.tracking.start_monotonic_ms,500);assert.equal(run.record.tracking.started_at,'same-anchor');
+ run.beginTrial('neutral',500,'start');run.visibility(false,1500,'hidden');run.visibility(true,21500,'visible');
+ assert.throws(()=>run.finishTrial(22000,'too-early'),/10秒/);run.finishTrial(30500,'complete');
+ assert.equal(run.record.trials[0].visible_duration_ms,10000);assert.equal(run.record.trials[0].wall_completion_ms,30000);
+});
