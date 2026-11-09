@@ -1,0 +1,17 @@
+{
+  "name": "ipp31078-local-prototype",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Local facial expressions, head pose and engineering evaluation",
+  "scripts": {
+    "build": "node ../scripts/build.mjs --package",
+    "check": "node ../scripts/build.mjs",
+    "test": "node --test ../tests/core.test.mjs ../tests/expressions.test.mjs"
+  },
+  "dependencies": {
+    "three": "0.160.1",
+    "@mediapipe/tasks-vision": "0.10.21"
+  },
+  "runtime_dependency_mode": "vendored locally; no npm install required to run"
+}

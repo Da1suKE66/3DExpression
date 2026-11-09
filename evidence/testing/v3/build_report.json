@@ -1,0 +1,283 @@
+{
+  "built_at": "2026-11-09T09:43:41.578Z",
+  "app_version": "0.3.0",
+  "protocol_version": "IPP31078-AB90-v3",
+  "overall": "passed",
+  "check_count": 44,
+  "checks": [
+    {
+      "name": "90_second_identical_task_plan",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "dependency_app/vendor/three.module.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "dependency_app/vendor/THREE-LICENSE.txt",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "dependency_app/vendor/addons/loaders/GLTFLoader.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "dependency_app/vendor/addons/utils/BufferGeometryUtils.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "dependency_app/vendor/vision_bundle.mjs",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "dependency_app/vendor/wasm/vision_wasm_internal.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "dependency_app/vendor/wasm/vision_wasm_internal.wasm",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "dependency_app/vendor/wasm/vision_wasm_nosimd_internal.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "dependency_app/vendor/wasm/vision_wasm_nosimd_internal.wasm",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "dependency_app/models/face_landmarker.task",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "dependency_app/vendor/MEDIAPIPE-LICENSE.txt",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "model_binary_hash",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "valid_glb_header",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "actual_morph_target_names",
+      "passed": true,
+      "detail": [
+        "jawOpen",
+        "eyeBlinkLeft",
+        "eyeWideLeft",
+        "browInnerUp",
+        "browOuterUpLeft",
+        "browDownLeft",
+        "eyeBlinkRight",
+        "eyeWideRight",
+        "browOuterUpRight",
+        "browDownRight",
+        "mouthSmileLeft",
+        "mouthFrownLeft",
+        "mouthPressLeft",
+        "mouthSmileRight",
+        "mouthFrownRight",
+        "mouthPressRight",
+        "mouthPucker"
+      ]
+    },
+    {
+      "name": "no_example_animation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "real_nonzero_morph_jawOpen",
+      "passed": true,
+      "detail": {
+        "changed_components": 1763
+      }
+    },
+    {
+      "name": "real_nonzero_morph_eyeBlinkLeft",
+      "passed": true,
+      "detail": {
+        "changed_components": 3485
+      }
+    },
+    {
+      "name": "real_nonzero_morph_eyeBlinkRight",
+      "passed": true,
+      "detail": {
+        "changed_components": 3485
+      }
+    },
+    {
+      "name": "real_nonzero_morph_mouthSmileLeft",
+      "passed": true,
+      "detail": {
+        "changed_components": 1026
+      }
+    },
+    {
+      "name": "real_nonzero_morph_mouthSmileRight",
+      "passed": true,
+      "detail": {
+        "changed_components": 1080
+      }
+    },
+    {
+      "name": "real_nonzero_morph_mouthFrownLeft",
+      "passed": true,
+      "detail": {
+        "changed_components": 1026
+      }
+    },
+    {
+      "name": "real_nonzero_morph_mouthFrownRight",
+      "passed": true,
+      "detail": {
+        "changed_components": 1080
+      }
+    },
+    {
+      "name": "real_nonzero_morph_browDownLeft",
+      "passed": true,
+      "detail": {
+        "changed_components": 2378
+      }
+    },
+    {
+      "name": "real_nonzero_morph_browDownRight",
+      "passed": true,
+      "detail": {
+        "changed_components": 2378
+      }
+    },
+    {
+      "name": "real_nonzero_morph_browInnerUp",
+      "passed": true,
+      "detail": {
+        "changed_components": 2378
+      }
+    },
+    {
+      "name": "real_nonzero_morph_browOuterUpLeft",
+      "passed": true,
+      "detail": {
+        "changed_components": 1189
+      }
+    },
+    {
+      "name": "real_nonzero_morph_browOuterUpRight",
+      "passed": true,
+      "detail": {
+        "changed_components": 1189
+      }
+    },
+    {
+      "name": "real_nonzero_morph_eyeWideLeft",
+      "passed": true,
+      "detail": {
+        "changed_components": 3485
+      }
+    },
+    {
+      "name": "real_nonzero_morph_eyeWideRight",
+      "passed": true,
+      "detail": {
+        "changed_components": 3485
+      }
+    },
+    {
+      "name": "real_nonzero_morph_mouthPucker",
+      "passed": true,
+      "detail": {
+        "changed_components": 3390
+      }
+    },
+    {
+      "name": "real_nonzero_morph_mouthPressLeft",
+      "passed": true,
+      "detail": {
+        "changed_components": 1520
+      }
+    },
+    {
+      "name": "real_nonzero_morph_mouthPressRight",
+      "passed": true,
+      "detail": {
+        "changed_components": 1600
+      }
+    },
+    {
+      "name": "syntax_avatar.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "syntax_core.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "syntax_evaluation.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "syntax_expressions.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "syntax_main.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "syntax_recording.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "syntax_replay.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "syntax_tracker.js",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "local_three_import_map",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "no_remote_page_assets",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "portable_package_created",
+      "passed": true,
+      "detail": "delivery/IPP31078-prototype-v0.3.0"
+    }
+  ],
+  "build_type": "offline_static_assets_with_local_python_service",
+  "packaged": true
+}

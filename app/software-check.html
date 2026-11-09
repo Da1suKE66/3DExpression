@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>扩展形变软件检查 · 非真人</title>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+<style>body{margin:0;background:#edf2f1;color:#173b44;font:16px system-ui}main{max-width:1100px;margin:auto;padding:24px}.warning{background:#fff1ce;border:1px solid #ead6a2;padding:14px}h1{font-size:24px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:24px}canvas{width:100%;height:680px;display:block}label{display:block;margin:16px 0 8px}select,button,input{font:inherit;width:100%;padding:9px;box-sizing:border-box}button{margin-top:18px}pre{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}p{line-height:1.7}@media(max-width:650px){.layout{display:block}canvas{height:500px}}</style></head>
+<body><main><p class="warning">软件检查 · synthetic_test · 手动设置系数和旋转，不调用真人相机，不是情绪识别或真人验收证据。</p><h1>扩展表情与头部旋转</h1><div class="layout"><canvas id="qa-avatar"></canvas><aside>
+<label for="preset">测试动作</label><select id="preset" disabled><option value="neutral">中性</option><option value="jaw">张嘴</option><option value="blink">眨眼</option><option value="smile">微笑</option><option value="sad">伤心动作</option><option value="surprise">惊讶动作</option><option value="angry">皱眉抿嘴</option><option value="pucker">噘嘴</option><option value="yaw">左右旋转</option><option value="pitch">上下旋转</option><option value="roll">侧倾</option><option value="mixed">伤心动作与转头</option></select>
+<label for="strength">测试幅度</label><input id="strength" type="range" min="0" max="1" step="0.05" value="0.85" disabled>
+<p id="qa-status">加载本地GLB…</p><pre id="qa-inspection"></pre><button id="check-detector" disabled>检查本地识别模型（空画布）</button><p id="detector-status">不会请求摄像头权限。</p>
+</aside></div></main>
+<script type="module">
+import {createAvatar} from './avatar.js?v=0.3.0-r2';
+import {neutral} from './core.js?v=0.3.0-r2';
+import {zeroPose,POSE_LIMITS} from './expressions.js?v=0.3.0-r2';
+import {CameraTracker} from './tracker.js?v=0.3.0-r2';
+const el=id=>document.getElementById(id);
+try{
+ const avatar=await createAvatar(el('qa-avatar'));
+ const presets={neutral:{},jaw:{jawOpen:1},blink:{eyeBlinkLeft:1,eyeBlinkRight:1},smile:{mouthSmileLeft:1,mouthSmileRight:1},sad:{mouthFrownLeft:1,mouthFrownRight:1,browInnerUp:0.8},surprise:{jawOpen:0.7,eyeWideLeft:1,eyeWideRight:1,browInnerUp:0.5,browOuterUpLeft:1,browOuterUpRight:1},angry:{browDownLeft:1,browDownRight:1,mouthPressLeft:0.8,mouthPressRight:0.8},pucker:{mouthPucker:1},mixed:{mouthFrownLeft:1,mouthFrownRight:1,browInnerUp:0.8}};
+ function update(){
+  const choice=el('preset').value, strength=Number(el('strength').value),values=neutral(),pose=zeroPose();
+  for(const [key,value] of Object.entries(presets[choice]||{}))values[key]=value*strength;
+  if(choice==='yaw'||choice==='mixed')pose.yaw=POSE_LIMITS.yaw*strength;
+  if(choice==='pitch')pose.pitch=POSE_LIMITS.pitch*strength;
+  if(choice==='roll')pose.roll=POSE_LIMITS.roll*strength;
+  avatar.apply(values);avatar.applyPose(pose);avatar.render();
+  const inspected=avatar.inspect();
+  el('qa-status').textContent=`软件检查已就绪 · ${inspected.actual_morph_names.length}个真实形变 · ${inspected.head_pivot}`;
+  el('qa-inspection').textContent=JSON.stringify({preset:choice,source:'synthetic_test',active_coefficients:Object.fromEntries(Object.entries(values).filter(([,v])=>v>0)),head_pose_rad:inspected.head_pose,animation_clips:inspected.animation_clips_in_file},null,2);
+ }
+ el('preset').disabled=false;el('strength').disabled=false;el('check-detector').disabled=false;
+ el('preset').addEventListener('change',update);el('strength').addEventListener('input',update);update();
+ const draw=()=>{avatar.render();requestAnimationFrame(draw)};requestAnimationFrame(draw);
+ el('check-detector').addEventListener('click',async()=>{
+  el('check-detector').disabled=true;el('detector-status').textContent='正在加载并检查本地WASM识别模型…';
+  let model;
+  try{const tracker=new CameraTracker(document.createElement('video'),()=>{});model=await tracker.ensureModel();const canvas=document.createElement('canvas');canvas.width=320;canvas.height=240;const ctx=canvas.getContext('2d');ctx.fillStyle='#888';ctx.fillRect(0,0,320,240);const result=model.detectForVideo(canvas,performance.now());if(result.faceLandmarks.length!==0)throw new Error('空画布不应检测到面部');el('detector-status').textContent='本地识别模型检查通过：空画布0张脸，未打开真人相机。';}
+  catch(error){el('detector-status').textContent='检查失败：'+error.message;el('check-detector').disabled=false;}
+  finally{model?.close();}
+ });
+}catch(error){el('qa-status').textContent='加载失败：'+error.message;}
+</script></body></html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IPP31078 面部化身体验</title><link rel="icon" href="data:,"><link rel="stylesheet" href="./style.css">
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+</head>
+<body>
+  <header><a class="brand" href="/?mode=demo">IPP31078 <span>面部化身体验</span></a><div class="header-right"><span class="local-dot"></span><span>本机处理</span><span class="version">v0.3</span></div></header>
+  <main>
+    <div class="intro"><div><p class="eyebrow">FACIAL AVATAR STUDY</p><h1>面部动作与化身体验</h1><p class="official-title">基于面部识别跟踪技术探究化身面部表情对于用户具身感的影响</p></div><div class="mode-switch" role="group" aria-label="使用模式"><button id="mode-study" class="selected">A/B 体验</button><button id="mode-demo">实时预览 / 录像</button></div></div>
+    <div id="source-warning" class="source-warning" hidden></div>
+    <div class="workspace">
+      <section id="stage" class="stage" aria-label="化身与相机展示">
+        <div class="stage-top"><div><span id="source-badge" class="source-badge">等待连接</span><span class="avatar-kind">简化卡通化身</span></div><span id="tracking-status" role="status">摄像头未开启</span></div>
+        <canvas id="avatar" aria-label="单个固定视角三维化身"></canvas>
+        <div id="demo-switches" class="demo-switches" hidden><button data-demo-condition="A">A · 静态</button><button data-demo-condition="B" class="selected">B · 实时跟随</button><button id="fullscreen" title="全屏展示">全屏</button></div>
+        <div id="camera-inset" class="camera-inset"><video id="webcam" autoplay muted playsinline></video><div id="camera-placeholder">摄像头小窗<br><small>开启后仅在本机处理</small></div><span id="camera-caption">真人摄像头 · 镜像预览</span></div>
+        <div id="parameter-overlay" class="parameter-overlay" hidden><div><span>张嘴</span><meter id="jaw-meter" min="0" max="1" value="0"></meter><b id="jaw-value">—</b></div><div><span>眨眼</span><meter id="blink-meter" min="0" max="1" value="0"></meter><b id="blink-value">—</b></div><div><span>微笑</span><meter id="smile-meter" min="0" max="1" value="0"></meter><b id="smile-value">—</b></div><div><span>伤心</span><meter id="sad-meter" min="0" max="1" value="0"></meter><b id="sad-value">—</b></div><div><span>惊讶</span><meter id="surprise-meter" min="0" max="1" value="0"></meter><b id="surprise-value">—</b></div><div><span>皱眉</span><meter id="angry-meter" min="0" max="1" value="0"></meter><b id="angry-value">—</b></div><div><span>噘嘴</span><meter id="pucker-meter" min="0" max="1" value="0"></meter><b id="pucker-value">—</b></div><p>面部动作组合强度 · 不判断真实情绪</p><p id="head-pose">校准后启用转头</p></div>
+        <div id="task-area" class="task-area"><span id="task-index">准备体验</span><h2 id="task-title">从自然的中性表情开始</h2><p id="task-description">先连接摄像头，再完成 3 秒中性校准。</p><progress id="task-progress" max="90000" value="0" aria-label="当前条件有效时间"></progress></div>
+        <div class="stage-bottom"><span id="phase-label">尚未开始</span><div><span id="render-rate">画面 — fps</span><span id="tracking-rate">结果 — Hz</span></div></div>
+      </section>
+      <aside class="controls">
+        <div class="connection"><div class="connection-title"><h2>体验准备</h2><span id="load-state">加载化身</span></div><progress id="load-progress" max="1" value="0"></progress><div class="two-buttons"><button id="camera-start" class="primary" disabled>启动摄像头</button><button id="camera-stop" disabled>停止</button></div><p class="small">摄像头视频不上传。记录包含匿名编号、检测状态、表情参数、实际更新率和自评。</p><label class="check"><input id="consent" type="checkbox"><span>我了解记录内容，自愿体验并可随时停止；不适时立即停止。</span></label></div>
+        <section id="study-setup">
+          <fieldset id="setup-fields"><label for="participant-id">匿名参与者编号</label><input id="participant-id" value="P01" maxlength="24" autocomplete="off" spellcheck="false"><div class="field-pair"><div><label for="condition-order">条件顺序</label><select id="condition-order"><option value="AB">A → B</option><option value="BA">B → A</option></select></div><div><label for="record-kind">记录用途</label><select id="record-kind"><option value="internal">内部试用</option><option value="exploratory">探索性体验</option></select></div></div><p class="small">编号不含姓名或学号。按分配表选择顺序；两条件各 90 秒，任务完全相同。</p></fieldset>
+          <button id="calibrate" disabled>中性校准 · 3 秒</button><p id="calibration-status" class="small">正对镜头，合嘴、睁眼并放松面部。</p><button id="study-start" class="primary" disabled>开始 A/B 体验</button>
+        </section>
+        <section id="running-panel" hidden><p class="step-label">统一体验任务</p><h2 id="condition-title">体验 A</h2><p>按屏幕提示做动作。两次体验没有正确或理想答案，请按自己的真实感受作答。</p><p id="pause-reason" class="status-line"></p><div class="two-buttons"><button id="study-pause">暂停</button><button id="study-abort" class="danger">结束本次</button></div><p class="small">当前配置已锁定。头位、镜头、光照、动作增益和平滑参数在 A/B 间保持一致。</p></section>
+        <section id="survey-panel" hidden><p class="step-label">本条件自评</p><h2 id="survey-title">体验后的感受</h2><p class="small">自编探索性问卷 · 1 完全不同意，7 完全同意。只评价刚才的条件。</p><form id="rating-form"><div id="questions"></div><label for="feedback">用一句话描述刚才的体验（可留空）</label><textarea id="feedback" rows="2" maxlength="1000" placeholder="请勿填写身份信息"></textarea><button type="submit" class="primary">保存本条件评价</button></form></section>
+        <section id="rest-panel" hidden><p class="step-label">条件间休息</p><h2>放松面部，稍作休息</h2><p>请保持相同座位、光照和窗口大小。下一次将重复同样的动作任务。</p><button id="next-condition" class="primary" disabled>休息中</button></section>
+        <section id="complete-panel" hidden><p class="step-label">体验记录</p><h2 id="completion-title">体验结束</h2><p id="completion-detail"></p><button id="save-study" class="primary">保存到项目</button><div class="two-buttons"><button id="download-json">完整 JSON</button><button id="download-frames">参数 CSV</button></div><button id="download-ratings">自评 CSV</button><button id="new-participant">下一位 / 新会话</button></section>
+        <section id="demo-panel" hidden>
+          <p class="step-label">实时预览与录像</p><h2>表情与头部跟随</h2>
+          <p>可尝试微笑、伤心动作、惊讶动作、皱眉、抿嘴、噘嘴和缓慢转头。A 的表情中性，B 的表情同步；两条件使用相同头部跟随。请先校准。</p>
+          <button id="demo-calibrate" disabled>中性校准 · 3 秒</button>
+          <div class="two-buttons"><button id="tracking-record" disabled>录制参数</button><button id="tracking-save" disabled>保存参数</button></div>
+          <button id="video-record" class="primary" disabled>开始真人演示录像</button>
+          <div class="two-buttons"><button id="video-save" disabled>保存 01_live.mp4</button><button id="video-discard" disabled>取消录像</button></div>
+          <p id="recording-status" class="small">真人连续录像至少 20 秒；参数回放不能录为真人演示。</p>
+          <details id="evaluation-tools"><summary>工程评估：性能与交互行为</summary>
+            <p>先保持中性10秒，再逐项做动作。实际成功次数由你观察填写；未核对可留空。准确的端到端延迟需另外拍摄脸和屏幕同时可见的高速视频。</p>
+            <button id="evaluation-start" class="primary" disabled>开始工程评估</button>
+            <label for="evaluation-action">本项动作</label><select id="evaluation-action" disabled></select>
+            <button id="trial-start" disabled>开始本项</button><p id="trial-time" class="small"></p>
+            <label for="trial-observed">本项实际观察到的成功次数</label><select id="trial-observed" disabled><option value="">未核对，不计成功率</option></select>
+            <label for="trial-notes">实际观察或异常（可留空）</label><textarea id="trial-notes" rows="2" maxlength="1000" disabled></textarea>
+            <button id="trial-finish" disabled>完成本项</button>
+            <div class="two-buttons"><button id="evaluation-stop" disabled>结束评估</button><button id="evaluation-save" disabled>保存评估记录</button></div>
+            <p id="evaluation-status" class="small">先连接摄像头并中性校准。</p>
+          </details>
+          <label class="file-label" for="replay-file">打开参数 JSON 回放</label><input id="replay-file" type="file" accept=".json,application/json">
+          <div id="replay-controls" hidden><p id="replay-info" class="status-line"></p><div class="two-buttons"><button id="replay-toggle">播放</button><button id="replay-exit">退出回放</button></div><progress id="replay-progress" max="1" value="0"></progress></div>
+        </section>
+        <p id="message" role="status" aria-live="polite">正在加载本地化身，请稍候。</p><details><summary>本次固定设置与来源</summary><p class="small">17个面部动作系数；头部跟随在 A/B 两条件相同；每条件90秒；表情平滑80ms、头部平滑100ms；3秒中性校准。本版使用新协议，旧记录单独保留。</p><p class="small">画面 fps 来自实际渲染计数，结果 Hz 来自实际结果时间戳。单次推理耗时及浏览器管线时间不代表物理端到端延迟。</p><p class="small">正式体验期间仍统一隐藏本人小窗；自编四项问卷逐题报告。</p></details>
+      </aside>
+    </div>
+    <footer><span>IPP31078 · 扩展表情与工程评估 · 协议 AB90-v3</span><span>新增动作与旋转待本人验收</span></footer>
+  </main>
+  <script type="module">import('./main.js?ui=extended-v030-20261109-r2').catch(error=>{document.getElementById('message').textContent='启动失败：'+error.message+'。请通过启动脚本打开，并检查本地资产。';});</script>
+</body>
+</html>

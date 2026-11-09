@@ -1,0 +1,129 @@
+{
+  "id": "ipp31078-cartoon-v1",
+  "label": "简化卡通化身",
+  "asset_path": "models/ipp31078-cartoon.glb",
+  "sha256": "9c6b41ae24d22ed737325ebf64eec0b89d064627b254658f558d73f53595e761",
+  "bytes": 1051288,
+  "creator": "project_created_geometry",
+  "generator": "scripts/create_avatar.mjs",
+  "animation_clips": [],
+  "automatic_animation": false,
+  "mapping": {
+    "jawOpen": "jawOpen",
+    "eyeBlinkLeft": "eyeBlinkLeft",
+    "eyeBlinkRight": "eyeBlinkRight",
+    "mouthSmileLeft": "mouthSmileLeft",
+    "mouthSmileRight": "mouthSmileRight"
+  },
+  "meshes": [
+    {
+      "mesh": "torso",
+      "vertices": 1189,
+      "morph_target_names": []
+    },
+    {
+      "mesh": "neck",
+      "vertices": 1189,
+      "morph_target_names": []
+    },
+    {
+      "mesh": "collar",
+      "vertices": 1189,
+      "morph_target_names": []
+    },
+    {
+      "mesh": "head",
+      "vertices": 1189,
+      "morph_target_names": [
+        "jawOpen"
+      ]
+    },
+    {
+      "mesh": "ear_left",
+      "vertices": 1189,
+      "morph_target_names": []
+    },
+    {
+      "mesh": "ear_right",
+      "vertices": 1189,
+      "morph_target_names": []
+    },
+    {
+      "mesh": "hair",
+      "vertices": 1189,
+      "morph_target_names": []
+    },
+    {
+      "mesh": "hair_part",
+      "vertices": 1189,
+      "morph_target_names": []
+    },
+    {
+      "mesh": "nose",
+      "vertices": 1189,
+      "morph_target_names": []
+    },
+    {
+      "mesh": "eye_left_white",
+      "vertices": 1189,
+      "morph_target_names": [
+        "eyeBlinkLeft"
+      ]
+    },
+    {
+      "mesh": "eye_left_iris",
+      "vertices": 1189,
+      "morph_target_names": [
+        "eyeBlinkLeft"
+      ]
+    },
+    {
+      "mesh": "eye_left_glint",
+      "vertices": 1189,
+      "morph_target_names": [
+        "eyeBlinkLeft"
+      ]
+    },
+    {
+      "mesh": "brow_left",
+      "vertices": 1189,
+      "morph_target_names": []
+    },
+    {
+      "mesh": "eye_right_white",
+      "vertices": 1189,
+      "morph_target_names": [
+        "eyeBlinkRight"
+      ]
+    },
+    {
+      "mesh": "eye_right_iris",
+      "vertices": 1189,
+      "morph_target_names": [
+        "eyeBlinkRight"
+      ]
+    },
+    {
+      "mesh": "eye_right_glint",
+      "vertices": 1189,
+      "morph_target_names": [
+        "eyeBlinkRight"
+      ]
+    },
+    {
+      "mesh": "brow_right",
+      "vertices": 1189,
+      "morph_target_names": []
+    },
+    {
+      "mesh": "mouth",
+      "vertices": 1189,
+      "morph_target_names": [
+        "jawOpen",
+        "mouthSmileLeft",
+        "mouthSmileRight"
+      ]
+    }
+  ],
+  "source_note": "Original parametric project geometry; Three.js API/GLTFLoader MIT; no Face Cap mesh included."
+}
