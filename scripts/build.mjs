@@ -9,11 +9,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const checks = [];
 const assert = (name, result, detail = null) => { checks.push({ name, passed: Boolean(result), detail }); if (!result) throw new Error(name + ': ' + JSON.stringify(detail)); };
-await fs.mkdir(path.join(root, 'evidence/testing/v3_1'), { recursive: true });
+await fs.mkdir(path.join(root, 'evidence/testing/v5'), { recursive: true });
 try {
   const protocol = { app_version: APP_VERSION, schema_version: SCHEMA_VERSION, protocol_version: PROTOCOL_VERSION, project_id: PROJECT_ID, official_title: OFFICIAL_TITLE, parameters: PARAMS, tasks: TASKS, coefficients: COEFFICIENTS, questions: QUESTIONS };
   await fs.writeFile(path.join(root, 'app/protocol.json'), JSON.stringify(protocol, null, 2) + '\n');
-  assert('90_second_identical_task_plan', TASKS.reduce((sum, task) => sum + task.duration_ms, 0) === 90000);
+  assert('60_second_identical_task_plan', TASKS.reduce((sum, task) => sum + task.duration_ms, 0) === 60000);
   const lock = JSON.parse(await fs.readFile(path.join(root, 'evidence/dependency_lock.json'), 'utf8'));
   for (const item of lock.files) assert('dependency_' + item.path, hash(await fs.readFile(path.join(root, item.path))) === item.sha256);
   const catalog = JSON.parse(await fs.readFile(path.join(root, 'app/avatar_catalog.json'), 'utf8'));
@@ -52,33 +52,33 @@ try {
   const inspection = { inspected_at: new Date().toISOString(), asset: 'app/' + manifest.asset_path, sha256: manifest.sha256, mesh_count: model.meshes.length, actual_morph_names: actualNames, mapping: manifest.mapping, animation_clip_count: model.animations?.length || 0, animation_playback_enabled: false, morph_checks: morphChecks, meshes: model.meshes.map(mesh => ({ name: mesh.name, morph_names: mesh.extras?.targetNames || [] })) };
   inspections.push(inspection);
   }
-  await fs.writeFile(path.join(root, 'evidence/model_inspection_v3_1.json'), JSON.stringify({catalog_id:catalog.id, avatars:inspections}, null, 2) + '\n');
+  await fs.writeFile(path.join(root, 'evidence/model_inspection_v5.json'), JSON.stringify({catalog_id:catalog.id, avatars:inspections}, null, 2) + '\n');
   const sourceFiles = (await fs.readdir(path.join(root, 'app'))).filter(name => name.endsWith('.js'));
   for (const name of sourceFiles) { const checked = spawnSync(process.execPath, ['--check', path.join(root, 'app', name)], { encoding: 'utf8' }); assert('syntax_' + name, checked.status === 0, checked.stderr || null); }
   const html = await fs.readFile(path.join(root, 'app/index.html'), 'utf8');
   assert('local_three_import_map', html.includes('"three":"./vendor/three.module.js"'));
   assert('no_remote_page_assets', !/(?:src|href)=["']https?:\/\//.test(html));
   if (process.argv.includes('--package')) {
-    const destination = path.join(root, 'delivery/IPP31078-prototype-v0.3.1');
-    try { const existing = await fs.readFile(path.join(destination, 'data/raw/participants.csv'), 'utf8'); if (existing.trim().split(/\r?\n/).length > 1) throw new Error('交付目录已有采集数据，请先完整归档，构建不会覆盖该记录表。'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    const destination = path.join(root, 'delivery/IPP31078-prototype-v0.5.0');
+    try { const entries = await fs.readdir(path.join(destination, 'data/raw')); if (entries.length) throw new Error('交付目录已有原始数据目录内容，构建不会覆盖；请使用新的交付目录。'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
     await fs.mkdir(destination, { recursive: true });
     await fs.cp(path.join(root, 'app'), path.join(destination, 'app'), { recursive: true });
     await fs.mkdir(path.join(destination, 'scripts'), { recursive: true });
     await fs.mkdir(path.join(destination, 'tests'), { recursive: true });
     for (const name of await fs.readdir(path.join(root, 'tests'))) if (/\.(?:py|mjs|cjs)$/.test(name)) await fs.copyFile(path.join(root, 'tests', name), path.join(destination, 'tests', name));
     for (const name of ['serve.py', 'session_data.py', 'evidence_registry.py', 'video_tools.py', 'analyze.py', 'evaluate.py', 'runtime_paths.py', 'install.py', 'fetch_assets.py', 'import_demo.py', 'build.mjs', 'create_avatar.mjs']) await fs.copyFile(path.join(root, 'scripts', name), path.join(destination, 'scripts', name));
-    for (const name of ['README.md', 'launch.py', '启动_笔记本.command', '启动_笔记本_Windows.bat', '评估分析.command', '启动原型.command', '安装环境.command', '运行分析.command', '构建检查.command', 'requirements-analysis.txt', 'analysis-requirements.lock.txt']) await fs.copyFile(path.join(root, name), path.join(destination, name));
+    for (const name of ['README.md', 'DEVELOPMENT.md', 'launch.py', '启动_笔记本.command', '启动_笔记本_Windows.bat', '评估分析.command', '启动原型.command', '安装环境.command', '运行分析.command', '构建检查.command', 'requirements-analysis.txt', 'analysis-requirements.lock.txt']) await fs.copyFile(path.join(root, name), path.join(destination, name));
     await fs.cp(path.join(root, 'portable'), path.join(destination, 'portable'), { recursive: true });
     await fs.cp(path.join(root, 'templates'), path.join(destination, 'templates'), { recursive: true });
     for (const folder of ['data/raw', 'data/processed', 'evidence', 'media/raw', 'media/output', 'materials']) await fs.mkdir(path.join(destination, folder), { recursive: true });
-    for (const name of ['experience_protocol.md', 'operator_guide.md', 'data_dictionary.md', 'questionnaire_blank.md', 'evaluation_protocol.md', 'video_metric_annotations.csv']) await fs.copyFile(path.join(root, 'materials', name), path.join(destination, 'materials', name));
-    for (const name of ['data/raw/participants.csv', 'materials/engineering_acceptance.csv']) { const header = (await fs.readFile(path.join(root, name), 'utf8')).split(/\r?\n/)[0]; await fs.writeFile(path.join(destination, name), header + '\r\n'); }
+    for (const name of ['experience_protocol.md', 'operator_guide.md', 'data_dictionary.md', 'questionnaire_blank.md', 'evaluation_protocol.md', 'video_metric_annotations.csv', '实验设置与报告引用基准_v5.md', 'experiment_baseline_v5.json']) await fs.copyFile(path.join(root, 'materials', name), path.join(destination, 'materials', name));
+    for (const [source, target] of [['templates/participants_v5.csv','data/raw/participants_v5.csv'],['materials/engineering_acceptance.csv','materials/engineering_acceptance.csv']]) { const header = (await fs.readFile(path.join(root, source), 'utf8')).split(/\r?\n/)[0]; await fs.writeFile(path.join(destination, target), header + '\r\n'); }
     await fs.copyFile(path.join(root, 'evidence/dependency_lock.json'), path.join(destination, 'evidence/dependency_lock.json'));
     await fs.copyFile(path.join(root, 'ASSET_SOURCES.md'), path.join(destination, 'ASSET_SOURCES.md'));
     for (const name of ['启动原型.command', '安装环境.command', '运行分析.command', '构建检查.command']) await fs.chmod(path.join(destination, name), 0o755);
-    assert('portable_package_created', true, 'delivery/IPP31078-prototype-v0.3.1');
+    assert('portable_package_created', true, 'delivery/IPP31078-prototype-v0.5.0');
   }
   const report = { built_at: new Date().toISOString(), app_version: APP_VERSION, protocol_version: PROTOCOL_VERSION, overall: 'passed', check_count: checks.length, checks, build_type: 'offline_static_assets_with_local_python_service', packaged: process.argv.includes('--package') };
-  await fs.writeFile(path.join(root, 'evidence/testing/v3_1/build_report.json'), JSON.stringify(report, null, 2) + '\n');
+  await fs.writeFile(path.join(root, 'evidence/testing/v5/build_report.json'), JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify({ overall: report.overall, checks: checks.length, model_morphs: actualNames, packaged: report.packaged }, null, 2));
-} catch (error) { await fs.writeFile(path.join(root, 'evidence/testing/v3_1/build_report.json'), JSON.stringify({ overall: 'failed', checks, error: error.stack }, null, 2) + '\n'); console.error(error.stack); process.exitCode = 1; }
+} catch (error) { await fs.writeFile(path.join(root, 'evidence/testing/v5/build_report.json'), JSON.stringify({ overall: 'failed', checks, error: error.stack }, null, 2) + '\n'); console.error(error.stack); process.exitCode = 1; }

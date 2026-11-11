@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, COEFFICIENTS, PARAMS } from './core.js?v=0.3.1';
+import { PROTOCOL_VERSION, COEFFICIENTS, PARAMS } from './core.js?v=0.5.0';
 import { POSE_AXES } from './expressions.js?v=0.3.1';
 
 const canonical = value => value && typeof value === 'object' ? Array.isArray(value) ? value.map(canonical) : Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
@@ -7,19 +7,22 @@ export async function readTrackingFile(file) {
   if (file.size > 32 * 1024 * 1024) throw new Error('回放文件超过32MB');
   const text = await file.text(); let data;
   try { data = JSON.parse(text); } catch { throw new Error('请选择完整的参数JSON文件'); }
-  if (data.protocol_version !== PROTOCOL_VERSION || !Array.isArray(data.frames) || !data.frames.length) throw new Error('需要当前90秒协议导出的参数或会话JSON；旧版与空记录不能回放');
+  const legacy = (data.protocol_version === 'IPP31078-AB90-v3.1' && data.app_version === '0.3.1' && data.schema_version === '3.0.0') || (data.protocol_version === 'IPP31078-AB90-v4' && data.app_version === '0.4.0' && data.schema_version === '4.0.0');
+  if ((!legacy && data.protocol_version !== PROTOCOL_VERSION) || !Array.isArray(data.frames) || !data.frames.length || data.frames.length > 30000) throw new Error('需要v3.1、v4或当前协议导出的非空参数JSON（最多30000条）');
   const origin = data.source_type === 'recorded_tracking' ? data.replay_metadata?.original_source_type : data.source_type;
   if (!['live_camera', 'synthetic_test'].includes(origin)) throw new Error('回放缺少原始输入来源');
   if (data.parameters?.avatar_id !== PARAMS.avatar_id || data.calibration?.status !== 'complete') throw new Error('模型或校准信息不匹配');
   if (!['doraemon','pikachu','original'].includes(data.model_info?.avatar_key) || !/^[a-f0-9]{64}$/.test(data.model_info?.sha256 || '') || data.calibration.avatar_key !== data.model_info.avatar_key || data.calibration.model_sha256 !== data.model_info.sha256) throw new Error('角色与校准记录不匹配');
-  if (JSON.stringify(canonical(data.parameters)) !== JSON.stringify(canonical(PARAMS))) throw new Error('记录的固定参数与当前版本不一致，无法按同一配置回放');
+  const expected = legacy ? { ...PARAMS, duration_ms: 90000, head_tracking_conditions: 'identical_in_A_and_B', condition_mapping: data.protocol_version.endsWith('v3.1') ? { A: 'static_neutral', B: 'live_synchronous' } : { A_prerecorded: 'independent_recorded_dynamic', B_realtime: 'live_synchronous' } } : PARAMS;
+  if (legacy) delete expected.added_delay_ms;
+  if (JSON.stringify(canonical(data.parameters)) !== JSON.stringify(canonical(expected))) throw new Error('记录的固定参数与当前驱动配置不一致，无法按同一配置回放');
   let previous = -Infinity;
   for (const frame of data.frames) {
     if (!Number.isFinite(frame.monotonic_ms) || frame.monotonic_ms < previous || ![0, 1].includes(frame.detected)) throw new Error('参数时间轴或检测状态无效');
     if (frame.detected && COEFFICIENTS.some(key => !Number.isFinite(frame['raw_' + key]) || frame['raw_' + key] < 0 || frame['raw_' + key] > 1)) throw new Error('回放系数缺失或越界');
     previous = frame.monotonic_ms;
   }
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
   return { data, origin, sha256: [...new Uint8Array(digest)].map(v => v.toString(16).padStart(2, '0')).join('') };
 }
 

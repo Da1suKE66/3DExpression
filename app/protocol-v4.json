@@ -1,0 +1,153 @@
+{
+  "app_version": "0.4.0",
+  "schema_version": "4.0.0",
+  "protocol_version": "IPP31078-AB90-v4",
+  "project_id": "IPP31078",
+  "official_title": "基于面部识别跟踪技术探究化身面部表情对于用户具身感的影响",
+  "parameters": {
+    "duration_ms": 90000,
+    "rest_ms": 15000,
+    "calibration_ms": 3000,
+    "calibration_min_samples": 30,
+    "inference_interval_ms": 40,
+    "tracking_stale_ms": 400,
+    "smoothing_tau_ms": 80,
+    "deadzone": 0.015,
+    "max_timer_step_ms": 100,
+    "max_pixel_ratio": 1.5,
+    "blink_mapping": {
+      "open_threshold": 0.08,
+      "closed_threshold": 0.55,
+      "hide_eyeball_threshold": 0.82,
+      "priority_over_eye_wide": true
+    },
+    "coefficient_smoothing_tau_ms": {
+      "eyeBlinkLeft": 35,
+      "eyeBlinkRight": 35
+    },
+    "gain": {
+      "jawOpen": 1,
+      "eyeBlinkLeft": 1,
+      "eyeBlinkRight": 1,
+      "mouthSmileLeft": 1,
+      "mouthSmileRight": 1,
+      "mouthFrownLeft": 1,
+      "mouthFrownRight": 1,
+      "browDownLeft": 1,
+      "browDownRight": 1,
+      "browInnerUp": 1,
+      "browOuterUpLeft": 1,
+      "browOuterUpRight": 1,
+      "eyeWideLeft": 1,
+      "eyeWideRight": 1,
+      "mouthPucker": 1,
+      "mouthPressLeft": 1,
+      "mouthPressRight": 1
+    },
+    "head_tracking": true,
+    "head_tracking_conditions": "identical_in_A_and_B",
+    "head_rotation_limits_rad": {
+      "pitch": 0.4363323129985824,
+      "yaw": 0.6108652381980153,
+      "roll": 0.3490658503988659
+    },
+    "head_smoothing_tau_ms": 100,
+    "show_camera_in_study": false,
+    "outside_task_face": "neutral",
+    "camera_constraints": {
+      "width_ideal": 640,
+      "height_ideal": 480,
+      "frame_rate_ideal": 30,
+      "frame_rate_max": 30,
+      "facing_mode": "user"
+    },
+    "condition_mapping": {
+      "A_prerecorded": "independent_recorded_dynamic",
+      "B_realtime": "live_synchronous"
+    },
+    "avatar_id": "ipp31078-character-catalog-v1",
+    "camera_pose": [
+      0,
+      0.08,
+      7.1
+    ],
+    "background": "#edf2f1"
+  },
+  "tasks": [
+    {
+      "id": "jaw",
+      "text": "缓慢张嘴，再自然合拢",
+      "detail": "约每 5 秒重复一次，保持头部自然稳定",
+      "duration_ms": 20000
+    },
+    {
+      "id": "blink",
+      "text": "自然眨眼，间或缓慢闭眼",
+      "detail": "约每 5 秒缓慢闭眼一次，避免用力挤眼",
+      "duration_ms": 20000
+    },
+    {
+      "id": "smile",
+      "text": "轻轻微笑，再放松面部",
+      "detail": "约每 5 秒重复一次，幅度以舒适为准",
+      "duration_ms": 20000
+    },
+    {
+      "id": "free",
+      "text": "自由组合刚才的面部动作",
+      "detail": "尝试张嘴、眨眼和微笑，注视同一个化身",
+      "duration_ms": 30000
+    }
+  ],
+  "coefficients": [
+    "jawOpen",
+    "eyeBlinkLeft",
+    "eyeBlinkRight",
+    "mouthSmileLeft",
+    "mouthSmileRight",
+    "mouthFrownLeft",
+    "mouthFrownRight",
+    "browDownLeft",
+    "browDownRight",
+    "browInnerUp",
+    "browOuterUpLeft",
+    "browOuterUpRight",
+    "eyeWideLeft",
+    "eyeWideRight",
+    "mouthPucker",
+    "mouthPressLeft",
+    "mouthPressRight"
+  ],
+  "questions": [
+    {
+      "id": "control",
+      "label": "面部控制感",
+      "text": "我感觉自己的面部动作能够直接影响化身的表情。"
+    },
+    {
+      "id": "congruence",
+      "label": "时间一致性",
+      "text": "化身的表情变化与我的面部动作在时间上保持一致。"
+    },
+    {
+      "id": "identification",
+      "label": "化身认同",
+      "text": "观看化身时，我感觉它能够代表我自己的虚拟形象。"
+    },
+    {
+      "id": "ownership",
+      "label": "面部所有权感",
+      "text": "我有一种化身的面部仿佛属于我自己的感觉。"
+    },
+    {
+      "id": "naturalness",
+      "label": "自然流畅度",
+      "text": "我认为化身的面部表情自然、流畅，没有明显违和感。"
+    },
+    {
+      "id": "expression",
+      "label": "表达自然度",
+      "text": "我能够自然地通过化身表达自己的面部状态。"
+    }
+  ]
+}

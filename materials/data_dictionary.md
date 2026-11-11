@@ -1,73 +1,44 @@
-# IPP31078 数据字典与来源规则
+# IPP31078 数据字典 v5
 
-协议IPP31078-AB90-v3.1，软件0.3.1，JSON结构3.0.0。旧版60秒/5题导出与本版不混合。
+本字典与[统一实验基准](实验设置与报告引用基准_v5.md)、[机器可读快照](experiment_baseline_v5.json)配合使用；后者不是运行配置。
 
-## 来源与记录用途
+软件0.5.0，协议IPP31078-ABC60-v5，schema5.0.0。JSON原始记录与统计输出分开；旧v2/v3/v3.1/v4原件不改写。
 
-| 字段 | 值 | 含义与分析规则 |
-| --- | --- | --- |
-| source_type | live_camera | 声明来自当前摄像头；实际真实性仍需对照操作者记录和演示核验 |
-| source_type | recorded_tracking | 已记录参数的回放；界面持续标识，正式A/B体验禁用，不计新参与者或真实相机性能 |
-| source_type | synthetic_test | 明确的软件测试输入；保存到evidence/testing/v2/，始终排除出研究及真实摄像头工程统计 |
-| record_kind | internal | 项目组本人/内部试用，与外部样本分开报告 |
-| record_kind | exploratory | 经同意的小规模探索性体验，实际收回完整配对后才计数 |
-| record_kind | engineering | 展示模式的参数记录，不包含问卷，不计作外部参与者 |
-
-匿名编号不是身份证明；同一人不能用多个编号增加人数。会话UUID不是参与者人数。同一会话的相同重复导出不增加人数，同编号多个会话需人工核对后选定，脚本不会挑选更有利的结果。
-
-## participants.csv长表
-
-初始化仅一行表头，0条数据。一位参与者在A/B完成后各有一行。真实评分由实际体验者完成；完整实时会话保存后自动追加，同会话重复保存不会重复追加。
-
-| 列 | 类型和说明 |
+| 字段 | 定义 |
 | --- | --- |
-| participant_id | 2–24位匿名文本编号，如分配表中的P01；不填姓名或学号 |
-| session_id | 完整JSON中的UUID；手工问卷也需使用一致、可追溯的会话编号 |
-| record_kind | internal或exploratory，不能缺失或把内部试用改成外部 |
-| source_type | live_camera；回放与软件测试不纳入真人评分 |
-| condition_order | AB或BA，测试前固定并在两行一致 |
-| condition | A或B；A静态中性，B本人同步 |
-| submitted_at | 真实作答时间，ISO8601并含时区，例如实际操作时的北京时间+08:00或UTC的Z；示例格式不是历史记录 |
-| control | 面部控制感，1–7整数 |
-| congruence | 动作一致性，1–7整数 |
-| identification | 化身认同，1–7整数 |
-| naturalness | 自然程度，1–7整数 |
-| comment | 一句真实开放反馈，可留空，不填身份信息 |
+| participant_id / session_id | 匿名编号与UUID；不要求真实身份 |
+| condition | A_prerecorded / B_realtime / C_delayed；旧A或A_static只按旧协议解释，不能并入新A |
+| condition_order | 会话JSON存完整条件名数组，CSV/评分存ABC等六种排列 |
+| condition_position / block_index | 同一实际位置1/2/3，两字段一致 |
+| task_id / task | adapt、basic、free、observe；非正式演示为demonstration |
+| timestamp / captured_at | 该条写入时的带时区ISO时间，不冒充相机曝光时刻 |
+| monotonic_ms / input_timestamp_ms | 模型结果完成时的单调时间；不是相机曝光时间，丢失/超时无有效输入时后者为空 |
+| input_available_at_ms | 本次映射、重定向与滤波完成后的可用时刻，即可入队时刻 |
+| feedback_input_timestamp_ms | 实际应用的表情所对应输入的结果时间；B为当前，C为更早的本条件输入，A为空 |
+| feedback_buffer_enqueue_ms | 该表情处理结果可用/入队时刻；C缓冲起点 |
+| feedback_applied_at_ms | 对应参数用于化身apply调用的时刻，不是物理显示时刻 |
+| added_delay_ms | C的设定附加延迟，默认400；A/B为0；会话parameters.added_delay_ms保存C配置 |
+| actual_buffer_delay_ms | C实际应用时刻减入队时刻；B就绪时为0；A、缓冲不足、暂停/失跟为空 |
+| feedback_state | ready / warming_up / prerecorded / inactive，区分就绪、预热、预录和无输出 |
+| software_latency_ms | 对应输入处理开始到输出渲染提交的可观测CPU链路，包含C缓冲；A、预热、无对应输入或未渲染为空。不是物理端到端延迟 |
+| normal_processing_ms | 对应输入从模型处理开始到映射滤波结果可用，不含人为队列 |
+| render_submitted_at_ms / output_rendered | render调用提交时刻与该条输出是否仍被提交；条件结束前被中性替换的条目不填对应输出链路耗时 |
+| frame_to_render_submit_ms / video_present_to_render_submit_ms | 浏览器提供并匹配的相机/呈现时间到对应输出提交；无元数据或A无对应关系时空，不冒充视觉延迟 |
+| camera_input_fps | 浏览器视频回调实际presentedFrames计数率，非请求frameRate，非直接传感器曝光帧率；不可观测时null |
+| tracking_fps / tracking_update_hz | 模型结果的观测更新率，检测失败结果也算实际推理；超时诊断不算新模型结果 |
+| render_fps / inference_ms | 实际render调用率与本次模型计算耗时；分别保存 |
+| tracking_valid / detected | 当前采样检测状态，布尔/0或1；成功率按result样本中检测成功比例计算 |
+| raw_* / corrected_* / target_* / live_filtered_* | 当前人的17通道原始、校正、重定向、滤波系数；A也保留实时输入；丢失为null |
+| applied_* | 实际面部输出；A取录制后系数，B取当前滤波结果，C取队列到期结果；预热/无效时为0 |
+| raw_pose_* / applied_pose_* | 头姿始终是当前人的实时处理结果，不随C面部队列延迟 |
+| prerecorded_stimulus / prerecorded_sha256 / prerecorded_position_ms | 独立真实录制的来源、匿名录制者、原协议、模型与文件SHA、时长、随机窗口及每帧原时间轴位置；A不计算参与者动作响应延迟 |
+| active_ms / wall_elapsed_ms / events | 有效时间与墙钟及暂停、丢失、恢复、任务、问卷、异常事件 |
+| ratings / 六个分值列 | 每条件六题1–7分，自评时间和条件位置；JSON内ratings即questionnaire_scores的逐条件记录，CSV展开六列 |
+| open_feedback / comment | 同一可空反馈文字，不收身份信息 |
+| preference / overall_preference | 会话最终偏好及提交时间；问卷三行附同一偏好值作为元数据，不当作三次独立偏好 |
 
-保存UTF-8 CSV。空值不是0分。评分8、0、负数、分数或缺失均会被标记；数值4.0可规范化为整数4，原文件不改写。重复同编号/会话/条件、缺失一条件、JSON与CSV冲突会暂时排除配对并列原因。
+新表data/raw/participants_v5.csv，六题与整体偏好可同时从完整JSON和CSV导出，另有专用偏好CSV。原始JSON按UUID及新导出后缀追加；旧participants.csv、participants_v4.csv及旧会话不覆盖。分析只合并同协议、同C设定400ms的完整三条件记录；不同角色/素材亦应人工核对后分层。输出data/processed/abc_v5及materials/results_note_v5.md。
 
-## 完整JSON与帧指标
+三条件完整会话保存接口上限128MB，仍校验最多30000条帧；参数录制接口和素材读取上限32MB。正常60秒三条件完整逐帧数据可能接近原32MB限制；不通过删除历史或丢弃采样缩小文件。过长暂停仍应停止并保留不完整会话，保存失败时先下载完整JSON备份。
 
-每次study_session包含项目/软件/协议版本、匿名编号、来源、条件顺序、固定参数快照、中性校准、模型SHA-256与真实形变字典、相机分辨率/帧率设置（不记录deviceId/groupId）、任务、条件状态、事件、逐帧指标与四题自评。
-
-- captured_at：实际记录时间（含时区）；monotonic_ms：浏览器单调时间，用于时间间隔与更新率。
-- active_ms：仅在前台、可用面部且未暂停时累积的有效任务时间；wall_elapsed_ms为条件的墙钟跨度，可能更长。
-- detected：1表示该次结果有面部及完整系数，0表示丢失；丢失原始系数为null，应用系数回中性，不补造有效帧。
-- sample_kind：result为一次实际检测结果，tracking_timeout为结果过期；回放为replay_frame，不当作新推理。
-- raw_*：检测器输出的17个系数；corrected_*：减中性基线并处理死区后系数；target_*：校准后经闭眼重定向的模型目标；applied_*：平滑后实际写入模型的系数。A的应用值始终0。
-- render_fps：实际渲染调用计数的滑窗速率；tracking_update_hz：实际结果的滑窗更新率；avatar_update_hz：实际形变应用调用的滑窗速率。窗口不足时为null。
-- inference_ms：单次detectForVideo执行耗时，不含采集、显示与传输，不能写成端到端延迟。回放无新推理时为null。
-- calibration.baseline：至少3秒且至少30个有效样本的逐系数中位数。duration_ms是要求的3000ms，observed_duration_ms为实际采样跨度；低更新率时会延长收样，最多15秒。
-- protocol_deviations：窗口变化等事件；界面会要求恢复窗口后继续，分析时仍需人工审阅。
-
-data/raw/tracking/存放真实工程参数片段；live_sessions/存放真实来源声明下的体验JSON。原始文件不覆盖。media/raw/01_live.mp4及.metadata.json记录实际录像、校验和、来源声明、时长检查与转换方式；不能用空占位文件代替。
-
-## 分析输出
-
-results.json包含实际编号数、完整配对数、内部/外部分组、AB/BA分配、逐题A/B描述与B−A差值、来源SHA-256、问题清单及局限。paired_scores.csv逐人逐题保存差值；engineering_metrics.csv包含基于实际时间戳的更新率、日志fps、丢失、系数范围和阈值周期估计。四题不相加，单人不能代表人群。
-
-materials/engineering_acceptance.csv为人工验收空表。action填写jaw、blink、smile、combined或stability；重复动作需填写实际要求次数、肉眼观察次数与视觉响应，连续稳定性需填写真实持续秒数、实际读到的fps和结果Hz。时间含时区，同一record_id与action不重复，未执行就留空。分析脚本读取该表，排除合成/回放来源，验证次数与数值，输出engineering_observations.csv及results.json中的manual_engineering_observations；人工读数不冒充帧日志中位数，也不当作参与者或问卷。
-
-点图每个点对应一个真实匿名编号，A为空心、B为实心，连线仅对应同一人；没有真实配对时不画虚构点。工程图同样在没有真实记录时显示无数据。源是合成输入的连续软件测试单独保存在evidence/testing/v2/，不填进真实工程图。
-
-## v3与工程评估补充
-
-当前协议为IPP31078-AB90-v3.1，旧v2记录保留原版本和模型摘要；后端分别校验，问卷分析不混用协议。17个系数及模型映射见app/model_manifest.json。pose_valid标识矩阵是否有效；raw_pose_*为原始旋转，corrected_pose_*为中性基准相对旋转，applied_pose_*为限幅和平滑后旋转，单位弧度。A、B均有相同头部驱动。
-
-data/raw/evaluations保存engineering_evaluation记录，内含完整tracking、独立trial_id、实际开始/完成时间、人工观察成功次数（可为null）、前台可见计时、实际渲染计数和浏览器视频计数。该记录不写参与者表。评估脚本按每份记录、每个协议分别分析。
-
-frame_to_render_submit_ms与video_present_to_render_submit_ms只在对应帧时钟可用时填写，是浏览器管线时间，不是物理端到端延迟。外部同步录像的帧标注使用video_metric_annotations.csv；未核对实际拍摄帧率或只有浏览器合成视频时不能纳入物理延迟指标。
-
-## v3.1角色与闭眼
-
-model_info包含avatar_key、catalog_id、id及sha256。calibration包含相同avatar_key和model_sha256，后端拒绝角色切换后沿用旧校准。检测有效帧新增17个target_*字段；丢失时raw_*、corrected_*、target_*均为空、applied_*为0。raw/corrected不被闭眼重定向覆盖，保证可复查原始输入。眨眼35ms、其他表情80ms；记录固定阈值及完整参数。参数回放切换至记录指定的角色并验证摘要；旧版本仅由分析脚本分别读取。
+中性参数抖动需要明确的neutral工程任务；适应和整体观察不自动视为中性。原工程评估保留中性10秒、逐动作人工观察与外部视频标注，不从阈值周期推断真实动作准确率。无输入数据或无人工观察时保持null，不能填0。

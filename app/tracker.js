@@ -1,8 +1,8 @@
-import { COEFFICIENTS, PARAMS, clamp } from './core.js?v=0.3.1';
-import { poseFromMatrix } from './expressions.js?v=0.3.1';
+import { COEFFICIENTS, PARAMS, clamp } from './core.js?v=0.5.0';
+import { poseFromMatrix } from './expressions.js?v=0.5.0';
 
 export class CameraTracker {
-  constructor(video, status) { this.video = video; this.status = status; this.stream = null; this.model = null; this.modelPromise = null; this.token = 0; this.lastVideoTime = -1; this.lastInference = -Infinity; this.categoryNames = []; this.frameCallback = null; this.frameMetadata = null; this.callbackCount = 0; this.missedCallbacks = 0; this.lastPresented = null; }
+  constructor(video, status) { this.video = video; this.status = status; this.stream = null; this.model = null; this.modelPromise = null; this.token = 0; this.lastVideoTime = -1; this.lastInference = -Infinity; this.categoryNames = []; this.frameCallback = null; this.frameMetadata = null; this.callbackCount = 0; this.missedCallbacks = 0; this.lastPresented = null; this.inputFrames = []; }
   async ensureModel() {
     if (this.model) return this.model;
     if (!this.modelPromise) this.modelPromise = (async () => {
@@ -26,11 +26,12 @@ export class CameraTracker {
     const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: PARAMS.camera_constraints.width_ideal }, height: { ideal: PARAMS.camera_constraints.height_ideal }, frameRate: { ideal: PARAMS.camera_constraints.frame_rate_ideal, max: PARAMS.camera_constraints.frame_rate_max }, facingMode: PARAMS.camera_constraints.facing_mode }, audio: false });
     if (token !== this.token) { stream.getTracks().forEach(track => track.stop()); return false; }
     this.stream = stream; this.video.srcObject = stream; await this.video.play();
-    this.frameMetadata = null; this.callbackCount = 0; this.missedCallbacks = 0; this.lastPresented = null;
+    this.frameMetadata = null; this.callbackCount = 0; this.missedCallbacks = 0; this.lastPresented = null; this.inputFrames = [];
     if (this.video.requestVideoFrameCallback) {
       const onFrame = (now, metadata) => {
         if (token !== this.token) return;
         this.callbackCount++;
+        if (Number.isFinite(metadata.presentedFrames)) { this.inputFrames.push({ at: now, count: metadata.presentedFrames }); while (this.inputFrames.length > 1 && this.inputFrames[0].at < now-2000) this.inputFrames.shift(); }
         if (this.lastPresented !== null && Number.isFinite(metadata.presentedFrames)) this.missedCallbacks += Math.max(0, metadata.presentedFrames - this.lastPresented - 1);
         this.lastPresented = metadata.presentedFrames;
         this.frameMetadata = { ...metadata, callbackTime: now };
@@ -51,6 +52,11 @@ export class CameraTracker {
     const quality = this.video.getVideoPlaybackQuality?.();
     return { total_video_frames: Number.isFinite(quality?.totalVideoFrames) ? quality.totalVideoFrames : null, dropped_video_frames: Number.isFinite(quality?.droppedVideoFrames) ? quality.droppedVideoFrames : null, callback_count: this.callbackCount, missed_callbacks: this.missedCallbacks };
   }
+  inputFps(now) {
+    const frames = this.inputFrames;
+    if (frames.length < 2 || now-frames.at(-1).at > 500 || frames.at(-1).at-frames[0].at < 500) return null;
+    return (frames.at(-1).count-frames[0].count)*1000/(frames.at(-1).at-frames[0].at);
+  }
   sample(now) {
     if (!this.model || !this.live() || this.video.readyState < 2 || this.video.currentTime === this.lastVideoTime || now - this.lastInference < PARAMS.inference_interval_ms) return null;
     this.lastVideoTime = this.video.currentTime; this.lastInference = now;
@@ -63,10 +69,10 @@ export class CameraTracker {
     const end = performance.now();
     const categories = result.faceBlendshapes?.[0]?.categories;
     const detected = Boolean(result.faceLandmarks?.length && categories?.length);
-    if (!detected) return { detected: false, raw: null, pose: null, inference_ms: end - start, monotonic_ms: end, sample_kind: 'result', ...timing };
+    if (!detected) return { detected: false, raw: null, pose: null, processing_start_ms: start, inference_ms: end - start, monotonic_ms: end, sample_kind: 'result', ...timing };
     this.categoryNames = categories.map(category => category.categoryName);
     const missing = COEFFICIENTS.filter(key => !this.categoryNames.includes(key));
     if (missing.length) throw new Error('识别模型缺少表情输出：' + missing.join('、'));
-    return { detected: true, raw: Object.fromEntries(categories.filter(category => COEFFICIENTS.includes(category.categoryName)).map(category => [category.categoryName, clamp(category.score)])), pose: poseFromMatrix(result.facialTransformationMatrixes?.[0]), inference_ms: end - start, monotonic_ms: end, sample_kind: 'result', ...timing };
+    return { detected: true, raw: Object.fromEntries(categories.filter(category => COEFFICIENTS.includes(category.categoryName)).map(category => [category.categoryName, clamp(category.score)])), pose: poseFromMatrix(result.facialTransformationMatrixes?.[0]), processing_start_ms: start, inference_ms: end - start, monotonic_ms: end, sample_kind: 'result', ...timing };
   }
 }

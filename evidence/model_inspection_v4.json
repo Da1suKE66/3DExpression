@@ -1,0 +1,860 @@
+{
+  "catalog_id": "ipp31078-character-catalog-v1",
+  "avatars": [
+    {
+      "inspected_at": "2026-11-10T10:56:25.093Z",
+      "asset": "app/models/doraemon-v1.glb",
+      "sha256": "645c14c688f298fa3996d78677480d012c8d4228fe52ec4a2cb71e8c4954ddc4",
+      "mesh_count": 39,
+      "actual_morph_names": [
+        "jawOpen",
+        "eyeWideLeft",
+        "eyeBlinkLeft",
+        "browInnerUp",
+        "browOuterUpLeft",
+        "browDownLeft",
+        "eyeWideRight",
+        "eyeBlinkRight",
+        "browOuterUpRight",
+        "browDownRight",
+        "mouthPucker",
+        "mouthSmileLeft",
+        "mouthFrownLeft",
+        "mouthPressLeft",
+        "mouthSmileRight",
+        "mouthFrownRight",
+        "mouthPressRight"
+      ],
+      "mapping": {
+        "jawOpen": "jawOpen",
+        "eyeBlinkLeft": "eyeBlinkLeft",
+        "eyeBlinkRight": "eyeBlinkRight",
+        "mouthSmileLeft": "mouthSmileLeft",
+        "mouthSmileRight": "mouthSmileRight",
+        "mouthFrownLeft": "mouthFrownLeft",
+        "mouthFrownRight": "mouthFrownRight",
+        "browDownLeft": "browDownLeft",
+        "browDownRight": "browDownRight",
+        "browInnerUp": "browInnerUp",
+        "browOuterUpLeft": "browOuterUpLeft",
+        "browOuterUpRight": "browOuterUpRight",
+        "eyeWideLeft": "eyeWideLeft",
+        "eyeWideRight": "eyeWideRight",
+        "mouthPucker": "mouthPucker",
+        "mouthPressLeft": "mouthPressLeft",
+        "mouthPressRight": "mouthPressRight"
+      },
+      "animation_clip_count": 0,
+      "animation_playback_enabled": false,
+      "morph_checks": [
+        {
+          "coefficient": "jawOpen",
+          "changed_components": 1961
+        },
+        {
+          "coefficient": "eyeBlinkLeft",
+          "changed_components": 915
+        },
+        {
+          "coefficient": "eyeBlinkRight",
+          "changed_components": 915
+        },
+        {
+          "coefficient": "mouthSmileLeft",
+          "changed_components": 850
+        },
+        {
+          "coefficient": "mouthSmileRight",
+          "changed_components": 900
+        },
+        {
+          "coefficient": "mouthFrownLeft",
+          "changed_components": 850
+        },
+        {
+          "coefficient": "mouthFrownRight",
+          "changed_components": 900
+        },
+        {
+          "coefficient": "browDownLeft",
+          "changed_components": 1998
+        },
+        {
+          "coefficient": "browDownRight",
+          "changed_components": 1998
+        },
+        {
+          "coefficient": "browInnerUp",
+          "changed_components": 1998
+        },
+        {
+          "coefficient": "browOuterUpLeft",
+          "changed_components": 999
+        },
+        {
+          "coefficient": "browOuterUpRight",
+          "changed_components": 999
+        },
+        {
+          "coefficient": "eyeWideLeft",
+          "changed_components": 1930
+        },
+        {
+          "coefficient": "eyeWideRight",
+          "changed_components": 1930
+        },
+        {
+          "coefficient": "mouthPucker",
+          "changed_components": 2871
+        },
+        {
+          "coefficient": "mouthPressLeft",
+          "changed_components": 1275
+        },
+        {
+          "coefficient": "mouthPressRight",
+          "changed_components": 1350
+        }
+      ],
+      "meshes": [
+        {
+          "name": "torso",
+          "morph_names": []
+        },
+        {
+          "name": "belly",
+          "morph_names": []
+        },
+        {
+          "name": "collar",
+          "morph_names": []
+        },
+        {
+          "name": "bell",
+          "morph_names": []
+        },
+        {
+          "name": "bell_line",
+          "morph_names": []
+        },
+        {
+          "name": "bell_hole",
+          "morph_names": []
+        },
+        {
+          "name": "pocket",
+          "morph_names": []
+        },
+        {
+          "name": "head",
+          "morph_names": [
+            "jawOpen"
+          ]
+        },
+        {
+          "name": "face_patch",
+          "morph_names": [
+            "jawOpen"
+          ]
+        },
+        {
+          "name": "nose",
+          "morph_names": []
+        },
+        {
+          "name": "nose_glint",
+          "morph_names": []
+        },
+        {
+          "name": "nose_line",
+          "morph_names": []
+        },
+        {
+          "name": "whisker_-1_-1",
+          "morph_names": []
+        },
+        {
+          "name": "whisker_-1_0",
+          "morph_names": []
+        },
+        {
+          "name": "whisker_-1_1",
+          "morph_names": []
+        },
+        {
+          "name": "whisker_1_-1",
+          "morph_names": []
+        },
+        {
+          "name": "whisker_1_0",
+          "morph_names": []
+        },
+        {
+          "name": "whisker_1_1",
+          "morph_names": []
+        },
+        {
+          "name": "arm_left",
+          "morph_names": []
+        },
+        {
+          "name": "hand_left",
+          "morph_names": []
+        },
+        {
+          "name": "foot_left",
+          "morph_names": []
+        },
+        {
+          "name": "eye_left_white",
+          "morph_names": [
+            "eyeWideLeft"
+          ]
+        },
+        {
+          "name": "eye_left_iris",
+          "morph_names": []
+        },
+        {
+          "name": "eye_left_glint",
+          "morph_names": []
+        },
+        {
+          "name": "lid_left_upper",
+          "morph_names": [
+            "eyeBlinkLeft",
+            "eyeWideLeft"
+          ]
+        },
+        {
+          "name": "lid_left_lower",
+          "morph_names": [
+            "eyeBlinkLeft",
+            "eyeWideLeft"
+          ]
+        },
+        {
+          "name": "lash_left",
+          "morph_names": [
+            "eyeBlinkLeft",
+            "eyeWideLeft"
+          ]
+        },
+        {
+          "name": "brow_left",
+          "morph_names": [
+            "browInnerUp",
+            "browOuterUpLeft",
+            "browDownLeft"
+          ]
+        },
+        {
+          "name": "arm_right",
+          "morph_names": []
+        },
+        {
+          "name": "hand_right",
+          "morph_names": []
+        },
+        {
+          "name": "foot_right",
+          "morph_names": []
+        },
+        {
+          "name": "eye_right_white",
+          "morph_names": [
+            "eyeWideRight"
+          ]
+        },
+        {
+          "name": "eye_right_iris",
+          "morph_names": []
+        },
+        {
+          "name": "eye_right_glint",
+          "morph_names": []
+        },
+        {
+          "name": "lid_right_upper",
+          "morph_names": [
+            "eyeBlinkRight",
+            "eyeWideRight"
+          ]
+        },
+        {
+          "name": "lid_right_lower",
+          "morph_names": [
+            "eyeBlinkRight",
+            "eyeWideRight"
+          ]
+        },
+        {
+          "name": "lash_right",
+          "morph_names": [
+            "eyeBlinkRight",
+            "eyeWideRight"
+          ]
+        },
+        {
+          "name": "brow_right",
+          "morph_names": [
+            "browInnerUp",
+            "browOuterUpRight",
+            "browDownRight"
+          ]
+        },
+        {
+          "name": "mouth",
+          "morph_names": [
+            "jawOpen",
+            "mouthPucker",
+            "mouthSmileLeft",
+            "mouthFrownLeft",
+            "mouthPressLeft",
+            "mouthSmileRight",
+            "mouthFrownRight",
+            "mouthPressRight"
+          ]
+        }
+      ]
+    },
+    {
+      "inspected_at": "2026-11-10T10:56:25.098Z",
+      "asset": "app/models/pikachu-v1.glb",
+      "sha256": "7d0e835433b705e882a0909ea9c28ebe3e05acf90764431d04f892dad5cecdad",
+      "mesh_count": 31,
+      "actual_morph_names": [
+        "jawOpen",
+        "eyeWideLeft",
+        "eyeBlinkLeft",
+        "browInnerUp",
+        "browOuterUpLeft",
+        "browDownLeft",
+        "eyeWideRight",
+        "eyeBlinkRight",
+        "browOuterUpRight",
+        "browDownRight",
+        "mouthPucker",
+        "mouthSmileLeft",
+        "mouthFrownLeft",
+        "mouthPressLeft",
+        "mouthSmileRight",
+        "mouthFrownRight",
+        "mouthPressRight"
+      ],
+      "mapping": {
+        "jawOpen": "jawOpen",
+        "eyeBlinkLeft": "eyeBlinkLeft",
+        "eyeBlinkRight": "eyeBlinkRight",
+        "mouthSmileLeft": "mouthSmileLeft",
+        "mouthSmileRight": "mouthSmileRight",
+        "mouthFrownLeft": "mouthFrownLeft",
+        "mouthFrownRight": "mouthFrownRight",
+        "browDownLeft": "browDownLeft",
+        "browDownRight": "browDownRight",
+        "browInnerUp": "browInnerUp",
+        "browOuterUpLeft": "browOuterUpLeft",
+        "browOuterUpRight": "browOuterUpRight",
+        "eyeWideLeft": "eyeWideLeft",
+        "eyeWideRight": "eyeWideRight",
+        "mouthPucker": "mouthPucker",
+        "mouthPressLeft": "mouthPressLeft",
+        "mouthPressRight": "mouthPressRight"
+      },
+      "animation_clip_count": 0,
+      "animation_playback_enabled": false,
+      "morph_checks": [
+        {
+          "coefficient": "jawOpen",
+          "changed_components": 1443
+        },
+        {
+          "coefficient": "eyeBlinkLeft",
+          "changed_components": 993
+        },
+        {
+          "coefficient": "eyeBlinkRight",
+          "changed_components": 993
+        },
+        {
+          "coefficient": "mouthSmileLeft",
+          "changed_components": 850
+        },
+        {
+          "coefficient": "mouthSmileRight",
+          "changed_components": 900
+        },
+        {
+          "coefficient": "mouthFrownLeft",
+          "changed_components": 850
+        },
+        {
+          "coefficient": "mouthFrownRight",
+          "changed_components": 900
+        },
+        {
+          "coefficient": "browDownLeft",
+          "changed_components": 1998
+        },
+        {
+          "coefficient": "browDownRight",
+          "changed_components": 1998
+        },
+        {
+          "coefficient": "browInnerUp",
+          "changed_components": 1998
+        },
+        {
+          "coefficient": "browOuterUpLeft",
+          "changed_components": 999
+        },
+        {
+          "coefficient": "browOuterUpRight",
+          "changed_components": 999
+        },
+        {
+          "coefficient": "eyeWideLeft",
+          "changed_components": 1909
+        },
+        {
+          "coefficient": "eyeWideRight",
+          "changed_components": 1909
+        },
+        {
+          "coefficient": "mouthPucker",
+          "changed_components": 2871
+        },
+        {
+          "coefficient": "mouthPressLeft",
+          "changed_components": 1275
+        },
+        {
+          "coefficient": "mouthPressRight",
+          "changed_components": 1350
+        }
+      ],
+      "meshes": [
+        {
+          "name": "torso",
+          "morph_names": []
+        },
+        {
+          "name": "head",
+          "morph_names": [
+            "jawOpen"
+          ]
+        },
+        {
+          "name": "nose",
+          "morph_names": []
+        },
+        {
+          "name": "ear_-1",
+          "morph_names": []
+        },
+        {
+          "name": "ear_tip_-1",
+          "morph_names": []
+        },
+        {
+          "name": "cheek_-1",
+          "morph_names": []
+        },
+        {
+          "name": "ear_1",
+          "morph_names": []
+        },
+        {
+          "name": "ear_tip_1",
+          "morph_names": []
+        },
+        {
+          "name": "cheek_1",
+          "morph_names": []
+        },
+        {
+          "name": "lightning_tail",
+          "morph_names": []
+        },
+        {
+          "name": "arm_left",
+          "morph_names": []
+        },
+        {
+          "name": "hand_left",
+          "morph_names": []
+        },
+        {
+          "name": "foot_left",
+          "morph_names": []
+        },
+        {
+          "name": "eye_left_white",
+          "morph_names": [
+            "eyeWideLeft"
+          ]
+        },
+        {
+          "name": "eye_left_iris",
+          "morph_names": []
+        },
+        {
+          "name": "eye_left_glint",
+          "morph_names": []
+        },
+        {
+          "name": "lid_left_upper",
+          "morph_names": [
+            "eyeBlinkLeft",
+            "eyeWideLeft"
+          ]
+        },
+        {
+          "name": "lid_left_lower",
+          "morph_names": [
+            "eyeBlinkLeft",
+            "eyeWideLeft"
+          ]
+        },
+        {
+          "name": "lash_left",
+          "morph_names": [
+            "eyeBlinkLeft",
+            "eyeWideLeft"
+          ]
+        },
+        {
+          "name": "brow_left",
+          "morph_names": [
+            "browInnerUp",
+            "browOuterUpLeft",
+            "browDownLeft"
+          ]
+        },
+        {
+          "name": "arm_right",
+          "morph_names": []
+        },
+        {
+          "name": "hand_right",
+          "morph_names": []
+        },
+        {
+          "name": "foot_right",
+          "morph_names": []
+        },
+        {
+          "name": "eye_right_white",
+          "morph_names": [
+            "eyeWideRight"
+          ]
+        },
+        {
+          "name": "eye_right_iris",
+          "morph_names": []
+        },
+        {
+          "name": "eye_right_glint",
+          "morph_names": []
+        },
+        {
+          "name": "lid_right_upper",
+          "morph_names": [
+            "eyeBlinkRight",
+            "eyeWideRight"
+          ]
+        },
+        {
+          "name": "lid_right_lower",
+          "morph_names": [
+            "eyeBlinkRight",
+            "eyeWideRight"
+          ]
+        },
+        {
+          "name": "lash_right",
+          "morph_names": [
+            "eyeBlinkRight",
+            "eyeWideRight"
+          ]
+        },
+        {
+          "name": "brow_right",
+          "morph_names": [
+            "browInnerUp",
+            "browOuterUpRight",
+            "browDownRight"
+          ]
+        },
+        {
+          "name": "mouth",
+          "morph_names": [
+            "jawOpen",
+            "mouthPucker",
+            "mouthSmileLeft",
+            "mouthFrownLeft",
+            "mouthPressLeft",
+            "mouthSmileRight",
+            "mouthFrownRight",
+            "mouthPressRight"
+          ]
+        }
+      ]
+    },
+    {
+      "inspected_at": "2026-11-10T10:56:25.102Z",
+      "asset": "app/models/original-v1.glb",
+      "sha256": "a99fa07e35f6f4cb0d8fbbd763ac9f39ccf391145a132236d9efdb0fd6c47edb",
+      "mesh_count": 24,
+      "actual_morph_names": [
+        "jawOpen",
+        "eyeWideLeft",
+        "eyeBlinkLeft",
+        "browInnerUp",
+        "browOuterUpLeft",
+        "browDownLeft",
+        "eyeWideRight",
+        "eyeBlinkRight",
+        "browOuterUpRight",
+        "browDownRight",
+        "mouthPucker",
+        "mouthSmileLeft",
+        "mouthFrownLeft",
+        "mouthPressLeft",
+        "mouthSmileRight",
+        "mouthFrownRight",
+        "mouthPressRight"
+      ],
+      "mapping": {
+        "jawOpen": "jawOpen",
+        "eyeBlinkLeft": "eyeBlinkLeft",
+        "eyeBlinkRight": "eyeBlinkRight",
+        "mouthSmileLeft": "mouthSmileLeft",
+        "mouthSmileRight": "mouthSmileRight",
+        "mouthFrownLeft": "mouthFrownLeft",
+        "mouthFrownRight": "mouthFrownRight",
+        "browDownLeft": "browDownLeft",
+        "browDownRight": "browDownRight",
+        "browInnerUp": "browInnerUp",
+        "browOuterUpLeft": "browOuterUpLeft",
+        "browOuterUpRight": "browOuterUpRight",
+        "eyeWideLeft": "eyeWideLeft",
+        "eyeWideRight": "eyeWideRight",
+        "mouthPucker": "mouthPucker",
+        "mouthPressLeft": "mouthPressLeft",
+        "mouthPressRight": "mouthPressRight"
+      },
+      "animation_clip_count": 0,
+      "animation_playback_enabled": false,
+      "morph_checks": [
+        {
+          "coefficient": "jawOpen",
+          "changed_components": 1763
+        },
+        {
+          "coefficient": "eyeBlinkLeft",
+          "changed_components": 993
+        },
+        {
+          "coefficient": "eyeBlinkRight",
+          "changed_components": 993
+        },
+        {
+          "coefficient": "mouthSmileLeft",
+          "changed_components": 1026
+        },
+        {
+          "coefficient": "mouthSmileRight",
+          "changed_components": 1080
+        },
+        {
+          "coefficient": "mouthFrownLeft",
+          "changed_components": 1026
+        },
+        {
+          "coefficient": "mouthFrownRight",
+          "changed_components": 1080
+        },
+        {
+          "coefficient": "browDownLeft",
+          "changed_components": 2378
+        },
+        {
+          "coefficient": "browDownRight",
+          "changed_components": 2378
+        },
+        {
+          "coefficient": "browInnerUp",
+          "changed_components": 2378
+        },
+        {
+          "coefficient": "browOuterUpLeft",
+          "changed_components": 1189
+        },
+        {
+          "coefficient": "browOuterUpRight",
+          "changed_components": 1189
+        },
+        {
+          "coefficient": "eyeWideLeft",
+          "changed_components": 2137
+        },
+        {
+          "coefficient": "eyeWideRight",
+          "changed_components": 2137
+        },
+        {
+          "coefficient": "mouthPucker",
+          "changed_components": 3390
+        },
+        {
+          "coefficient": "mouthPressLeft",
+          "changed_components": 1520
+        },
+        {
+          "coefficient": "mouthPressRight",
+          "changed_components": 1600
+        }
+      ],
+      "meshes": [
+        {
+          "name": "torso",
+          "morph_names": []
+        },
+        {
+          "name": "neck",
+          "morph_names": []
+        },
+        {
+          "name": "collar",
+          "morph_names": []
+        },
+        {
+          "name": "head",
+          "morph_names": [
+            "jawOpen"
+          ]
+        },
+        {
+          "name": "ear_left",
+          "morph_names": []
+        },
+        {
+          "name": "ear_right",
+          "morph_names": []
+        },
+        {
+          "name": "hair",
+          "morph_names": []
+        },
+        {
+          "name": "hair_part",
+          "morph_names": []
+        },
+        {
+          "name": "nose",
+          "morph_names": []
+        },
+        {
+          "name": "eye_left_white",
+          "morph_names": [
+            "eyeWideLeft"
+          ]
+        },
+        {
+          "name": "eye_left_iris",
+          "morph_names": []
+        },
+        {
+          "name": "eye_left_glint",
+          "morph_names": []
+        },
+        {
+          "name": "lid_left_upper",
+          "morph_names": [
+            "eyeBlinkLeft",
+            "eyeWideLeft"
+          ]
+        },
+        {
+          "name": "lid_left_lower",
+          "morph_names": [
+            "eyeBlinkLeft",
+            "eyeWideLeft"
+          ]
+        },
+        {
+          "name": "lash_left",
+          "morph_names": [
+            "eyeBlinkLeft",
+            "eyeWideLeft"
+          ]
+        },
+        {
+          "name": "brow_left",
+          "morph_names": [
+            "browInnerUp",
+            "browOuterUpLeft",
+            "browDownLeft"
+          ]
+        },
+        {
+          "name": "eye_right_white",
+          "morph_names": [
+            "eyeWideRight"
+          ]
+        },
+        {
+          "name": "eye_right_iris",
+          "morph_names": []
+        },
+        {
+          "name": "eye_right_glint",
+          "morph_names": []
+        },
+        {
+          "name": "lid_right_upper",
+          "morph_names": [
+            "eyeBlinkRight",
+            "eyeWideRight"
+          ]
+        },
+        {
+          "name": "lid_right_lower",
+          "morph_names": [
+            "eyeBlinkRight",
+            "eyeWideRight"
+          ]
+        },
+        {
+          "name": "lash_right",
+          "morph_names": [
+            "eyeBlinkRight",
+            "eyeWideRight"
+          ]
+        },
+        {
+          "name": "brow_right",
+          "morph_names": [
+            "browInnerUp",
+            "browOuterUpRight",
+            "browDownRight"
+          ]
+        },
+        {
+          "name": "mouth",
+          "morph_names": [
+            "jawOpen",
+            "mouthPucker",
+            "mouthSmileLeft",
+            "mouthFrownLeft",
+            "mouthPressLeft",
+            "mouthSmileRight",
+            "mouthFrownRight",
+            "mouthPressRight"
+          ]
+        }
+      ]
+    }
+  ]
+}

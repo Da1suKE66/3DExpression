@@ -41,12 +41,20 @@ class ServerTests(unittest.TestCase):
         data=fixture()
         for _ in range(2):self.assertEqual(self.request('/api/sessions',data)[0],201)
         self.assertEqual(len(list((self.root/'data/raw/live_sessions').glob('*.json'))),2)
-        with (self.root/'data/raw/participants.csv').open(encoding='utf-8-sig') as handle:self.assertEqual(len(list(csv.DictReader(handle))),2)
+        with (self.root/'data/raw/participants_v5.csv').open(encoding='utf-8-sig') as handle:self.assertEqual(len(list(csv.DictReader(handle))),3)
+    def test_new_save_never_rewrites_historical_table(self):
+        old=self.root/'data/raw/participants.csv';old.parent.mkdir(parents=True);old.write_bytes(b'HISTORICAL TEST SENTINEL DO NOT MODIFY\r\n')
+        v4=old.parent/'participants_v4.csv';v4.write_bytes(b'HISTORICAL V4 KEEP BYTES\r\n')
+        before=old.read_bytes();self.assertEqual(self.request('/api/sessions',fixture())[0],201)
+        self.assertEqual(old.read_bytes(),before);self.assertEqual(v4.read_bytes(),b'HISTORICAL V4 KEEP BYTES\r\n');self.assertTrue((old.parent/'participants_v5.csv').exists())
+    def test_new_save_rejects_incomplete_six_item_questionnaire(self):
+        d=fixture();d['ratings'][0].pop('ownership');self.assertEqual(self.request('/api/sessions',d)[0],422)
+        self.assertFalse((self.root/'data/raw').exists())
     def test_synthetic_storage_is_outside_real_raw(self):
-        code,body=self.request('/api/sessions',fixture(source='synthetic_test'));self.assertEqual(code,201);self.assertIn('evidence/testing/v3/sessions',json.loads(body)['path']);self.assertFalse((self.root/'data/raw').exists())
+        code,body=self.request('/api/sessions',fixture(source='synthetic_test'));self.assertEqual(code,201);self.assertIn('evidence/testing/v5/sessions',json.loads(body)['path'].replace('\\','/'));self.assertFalse((self.root/'data/raw').exists())
     def test_source_and_origin_guards(self):
         self.assertEqual(self.request('/api/sessions',fixture(source='recorded_tracking'))[0],422)
-        self.assertEqual(self.request('/api/sessions',fixture(),{'Content-Type':'application/json','Origin':'https://example.invalid'})[0],403)
+        self.assertEqual(self.request('/api/sessions',{}, {'Content-Type':'application/json','Origin':'https://example.invalid'})[0],403)
     def test_malformed_and_unconsented_requests_leave_no_raw_files(self):
         data=fixture();data['consent']=False;self.assertEqual(self.request('/api/sessions',data)[0],422)
         self.assertEqual(self.request('/api/sessions',b'{',{'Content-Type':'application/json'})[0],400);self.assertFalse((self.root/'data/raw').exists())

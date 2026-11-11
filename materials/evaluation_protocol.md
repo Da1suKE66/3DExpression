@@ -1,12 +1,12 @@
 # 扩展表情与头部跟随的工程评估
 
-软件0.3.1，参数/问卷协议IPP31078-AB90-v3.1，工程评估协议IPP31078-EVAL-v1。图中共12项：系统性能7项、交互行为5项。工程评估不代替具身感问卷，不增加外部参与者人数。
+软件0.5.0，参数/问卷协议IPP31078-ABC60-v5，工程评估协议IPP31078-EVAL-v1。图中共12项：系统性能7项、交互行为5项。工程评估不代替具身感问卷，不增加外部参与者人数。
 
 ## 功能与对照
 
-17个真实形变系数覆盖张嘴、左右眨眼、微笑、嘴角下压、眉心上抬、左右眉下压/外侧抬起、左右睁大眼睛、噘嘴及左右抿嘴。“伤心”“惊讶”等只是动作组合的名称，不是识别或推断人的真实情绪。化身没有自动表情、自动眨眼或预录动画。
+17个真实形变系数覆盖张嘴、左右眨眼、微笑、嘴角下压、眉心上抬、左右眉下压/外侧抬起、左右睁大眼睛、噘嘴及左右抿嘴。“伤心”“惊讶”等只是动作组合的名称，不是识别或推断人的真实情绪。GLB没有自动播放的动画片段。B由本人实时系数驱动，C在同处理后增加表情缓冲；A使用独立真实参数录制的动态表情，不能把它写成静态中性。
 
-头部使用MediaPipe面部变换矩阵，按中性校准姿态取相对旋转，采用镜像显示和100ms平滑；最大左右35°、上下25°、侧倾20°。追踪丢失或姿态无效时回中性。A、B使用同一头部驱动，只改变面部表情：A中性、B同步。v2为固定头位及五个系数，v3与v2的原始记录、问卷结果分开，不能把新增动作当成旧版已验收。
+头部使用MediaPipe面部变换矩阵，按中性校准姿态取相对旋转，采用镜像显示和100ms平滑；最大左右35°、上下25°、侧倾20°。追踪丢失或姿态无效时回中性。A/B/C使用同一实时头部驱动：A独立预录动态、B实时、C表情延迟默认400ms，C不延迟头部。主观实验每条件有效60秒、六种顺序及六题，完整设置见[报告引用基准](实验设置与报告引用基准_v5.md)。工程评估入口仍为实时B，不自动执行主观A/B/C或C延迟试验。v2为固定头位及五个系数，v3与v2的原始记录、问卷结果分开，不能把新增动作当成旧版已验收。
 
 ## 采集步骤
 
@@ -48,6 +48,10 @@
 
 来源： [MediaPipe Face Landmarker](https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker?tab=Web)、[Three.js r160摄像头形变例程](https://github.com/mrdoob/three.js/blob/r160/examples/webgl_morphtargets_webcam.html)、[requestVideoFrameCallback](https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/requestVideoFrameCallback)、[getVideoPlaybackQuality](https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/getVideoPlaybackQuality)。依赖继续使用已锁定的本地版本，未升级SDK或采用Face Cap网格。
 
-## v3.1记录边界
+## 历史v3.1及后续记录边界
 
 三种化身分别按记录的模型身份报告，不混合为单一角色验收。校准后眨眼经固定阈值重定向，驱动一致性使用target_*对applied_*，旧记录无target_*时使用corrected_*并标注参照。中性任务必须累计至少10秒前台可见时间，后台墙钟时间不满足中性抖动采样条件。角色切换前须保存现有记录，切换后重新校准。v2、v3.0及v3.1的协议和模型信息均保留，旧数据原件不改写。
+
+## v5主观条件数据的解释
+
+主观会话另记camera_input_fps、tracking_fps、render_fps、inference_ms、software_latency_ms、actual_buffer_delay_ms和源输入时间。C的400ms是附加设定，软件等待与处理链路均非物理视觉端到端；A没有当前人动作响应对应，相关延迟应为空。工程评估的原12项不因增加字段而自动变成已测得的结果；主观自由表达段不能替代10秒neutral任务。旧JSON按原协议解释，不补写新字段，不与v5三条件合并。

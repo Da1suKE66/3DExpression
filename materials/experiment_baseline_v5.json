@@ -1,0 +1,159 @@
+{
+  "document_role": "report_and_development_reference_not_runtime_config",
+  "updated_at": "2026-11-10",
+  "project_id": "IPP31078",
+  "official_title": "基于面部识别跟踪技术探究化身面部表情对于用户具身感的影响",
+  "research_topic": "化身面部表情的反馈来源与时间同步性对用户交互体验的影响",
+  "app_version": "0.5.0",
+  "protocol_version": "IPP31078-ABC60-v5",
+  "schema_version": "5.0.0",
+  "engineering_protocol": "IPP31078-EVAL-v1",
+  "runtime_authority": [
+    "app/core.js",
+    "app/main.js",
+    "app/delay.js",
+    "app/prerecorded.js"
+  ],
+  "protocol_snapshot": "app/protocol.json",
+  "conditions": [
+    {
+      "id": "A_prerecorded",
+      "face_source": "independent_real_tracking_recording",
+      "added_delay_ms": 0
+    },
+    {
+      "id": "B_realtime",
+      "face_source": "current_participant_live_tracking",
+      "added_delay_ms": 0
+    },
+    {
+      "id": "C_delayed",
+      "face_source": "same_live_pipeline_timestamp_buffer",
+      "added_delay_ms": 400
+    }
+  ],
+  "condition_orders": [
+    "ABC",
+    "ACB",
+    "BAC",
+    "BCA",
+    "CAB",
+    "CBA"
+  ],
+  "condition_duration_ms": 60000,
+  "tasks": [
+    {
+      "id": "adapt",
+      "text": "适应观察",
+      "detail": "自然观察化身，熟悉当前交互方式",
+      "duration_ms": 10000
+    },
+    {
+      "id": "basic",
+      "text": "基础面部动作",
+      "detail": "舒适地尝试张嘴、眨眼、微笑、抬眉，再自然放松",
+      "duration_ms": 20000
+    },
+    {
+      "id": "free",
+      "text": "自由面部表达",
+      "detail": "自由组合不同面部动作，观察化身变化",
+      "duration_ms": 20000
+    },
+    {
+      "id": "observe",
+      "text": "整体观察",
+      "detail": "自由观察和尝试动作，形成整体体验印象",
+      "duration_ms": 10000
+    }
+  ],
+  "questions": [
+    {
+      "id": "control",
+      "label": "面部控制感",
+      "text": "我感觉自己的面部动作能够直接影响化身的表情。"
+    },
+    {
+      "id": "congruence",
+      "label": "时间一致性",
+      "text": "化身的表情变化与我的面部动作在时间上保持一致。"
+    },
+    {
+      "id": "identification",
+      "label": "化身认同",
+      "text": "观看化身时，我感觉它能够代表我自己的虚拟形象。"
+    },
+    {
+      "id": "ownership",
+      "label": "面部所有权感",
+      "text": "我有一种化身的面部仿佛属于我自己的感觉。"
+    },
+    {
+      "id": "naturalness",
+      "label": "自然流畅度",
+      "text": "我认为化身的面部表情自然、流畅，没有明显违和感。"
+    },
+    {
+      "id": "expression",
+      "label": "表达自然度",
+      "text": "我能够自然地通过化身表达自己的面部状态。"
+    }
+  ],
+  "rating_scale": {
+    "min": 1,
+    "max": 7
+  },
+  "rest_min_ms": 15000,
+  "head_tracking": "same_realtime_head_pipeline_in_all_three_conditions_not_delayed",
+  "prerecorded": {
+    "minimum_valid_continuous_ms": 60000,
+    "recommended_recording_seconds": [
+      75,
+      120
+    ],
+    "independent_donor": true,
+    "independent_of_task_prompts": true,
+    "random_continuous_window": true,
+    "loop": false,
+    "required_actions": [
+      "blink",
+      "smile",
+      "jaw_open",
+      "brow_raise"
+    ],
+    "source": "live_camera tracking_recording; mapped and smoothed at recording, not manual keyframes"
+  },
+  "final_preference_choices": [
+    "A_prerecorded",
+    "B_realtime",
+    "C_delayed",
+    "no_preference"
+  ],
+  "feedback_optional": true,
+  "anonymous_only": true,
+  "delay": {
+    "default_added_ms": 400,
+    "configuration_min_ms": 0,
+    "configuration_max_ms": 2000,
+    "location": "after_expression_mapping_and_smoothing",
+    "buffer_ms_definition": "feedback_applied_at_ms - feedback_buffer_enqueue_ms",
+    "software_ms_definition": "render_submitted_at_ms - feedback_processing_start_ms",
+    "is_measured_physical_end_to_end": false,
+    "a_response_latency": null
+  },
+  "data": {
+    "raw_scores": "data/raw/participants_v5.csv",
+    "complete_session": "JSON: frames, conditions, ratings, preference, events",
+    "exports": [
+      "complete_json",
+      "frames_csv",
+      "ratings_csv",
+      "preference_csv"
+    ],
+    "analysis_directory": "data/processed/abc_v5",
+    "analysis_default_c_delay_ms": 400,
+    "legacy_data": "keep original files and protocol versions; never merge A_static with A_prerecorded"
+  },
+  "design_limitations": "A与B除同步性外还可能存在录制者及表情内容差异；B与C的附加延迟变量控制更明确。本实验不是完整的双因素析因设计，不能声称分别估计所有因素的主效应与交互效应。桌面面部体验不能推广为完整VR、全身所有权或自我定位。",
+  "real_validation_status": "真实采集与人工验收状态在本机项目档案中维护；公开仓库不附参与者数据或个案结果。自然性、活动量匹配、摄像头/延迟实测及外部视觉时延需按实际记录逐项核验。"
+}

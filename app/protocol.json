@@ -1,11 +1,12 @@
 {
-  "app_version": "0.3.1",
-  "schema_version": "3.0.0",
-  "protocol_version": "IPP31078-AB90-v3.1",
+  "app_version": "0.5.0",
+  "schema_version": "5.0.0",
+  "protocol_version": "IPP31078-ABC60-v5",
   "project_id": "IPP31078",
   "official_title": "基于面部识别跟踪技术探究化身面部表情对于用户具身感的影响",
   "parameters": {
-    "duration_ms": 90000,
+    "duration_ms": 60000,
+    "added_delay_ms": 400,
     "rest_ms": 15000,
     "calibration_ms": 3000,
     "calibration_min_samples": 30,
@@ -45,7 +46,7 @@
       "mouthPressRight": 1
     },
     "head_tracking": true,
-    "head_tracking_conditions": "identical_in_A_and_B",
+    "head_tracking_conditions": "identical_in_A_B_C",
     "head_rotation_limits_rad": {
       "pitch": 0.4363323129985824,
       "yaw": 0.6108652381980153,
@@ -62,8 +63,9 @@
       "facing_mode": "user"
     },
     "condition_mapping": {
-      "A": "static_neutral",
-      "B": "live_synchronous"
+      "A_prerecorded": "independent_recorded_dynamic",
+      "B_realtime": "live_synchronous",
+      "C_delayed": "same_live_pipeline_with_added_delay"
     },
     "avatar_id": "ipp31078-character-catalog-v1",
     "camera_pose": [
@@ -75,28 +77,28 @@
   },
   "tasks": [
     {
-      "id": "jaw",
-      "text": "缓慢张嘴，再自然合拢",
-      "detail": "约每 5 秒重复一次，保持头部自然稳定",
-      "duration_ms": 20000
+      "id": "adapt",
+      "text": "适应观察",
+      "detail": "自然观察化身，熟悉当前交互方式",
+      "duration_ms": 10000
     },
     {
-      "id": "blink",
-      "text": "自然眨眼，间或缓慢闭眼",
-      "detail": "约每 5 秒缓慢闭眼一次，避免用力挤眼",
-      "duration_ms": 20000
-    },
-    {
-      "id": "smile",
-      "text": "轻轻微笑，再放松面部",
-      "detail": "约每 5 秒重复一次，幅度以舒适为准",
+      "id": "basic",
+      "text": "基础面部动作",
+      "detail": "舒适地尝试张嘴、眨眼、微笑、抬眉，再自然放松",
       "duration_ms": 20000
     },
     {
       "id": "free",
-      "text": "自由组合刚才的面部动作",
-      "detail": "尝试张嘴、眨眼和微笑，注视同一个化身",
-      "duration_ms": 30000
+      "text": "自由面部表达",
+      "detail": "自由组合不同面部动作，观察化身变化",
+      "duration_ms": 20000
+    },
+    {
+      "id": "observe",
+      "text": "整体观察",
+      "detail": "自由观察和尝试动作，形成整体体验印象",
+      "duration_ms": 10000
     }
   ],
   "coefficients": [
@@ -122,22 +124,32 @@
     {
       "id": "control",
       "label": "面部控制感",
-      "text": "我感觉自己能够控制化身的面部动作。"
+      "text": "我感觉自己的面部动作能够直接影响化身的表情。"
     },
     {
       "id": "congruence",
-      "label": "动作一致性",
-      "text": "化身的面部动作与我做出的动作一致。"
+      "label": "时间一致性",
+      "text": "化身的表情变化与我的面部动作在时间上保持一致。"
     },
     {
       "id": "identification",
       "label": "化身认同",
-      "text": "体验时，我对这个化身有认同感。"
+      "text": "观看化身时，我感觉它能够代表我自己的虚拟形象。"
+    },
+    {
+      "id": "ownership",
+      "label": "面部所有权感",
+      "text": "我有一种化身的面部仿佛属于我自己的感觉。"
     },
     {
       "id": "naturalness",
-      "label": "自然程度",
-      "text": "化身的面部表现让我感觉自然。"
+      "label": "自然流畅度",
+      "text": "我认为化身的面部表情自然、流畅，没有明显违和感。"
+    },
+    {
+      "id": "expression",
+      "label": "表达自然度",
+      "text": "我能够自然地通过化身表达自己的面部状态。"
     }
   ]
 }

@@ -18,7 +18,7 @@ def evaluation_fixture(source='live_camera'):
     tracking=fixture(source=source)
     tracking.update(record_type='tracking_recording',record_kind='engineering',duration_ms=12000,start_monotonic_ms=0,end_monotonic_ms=12000)
     sid=tracking['session_id']; neutral_id=str(uuid4());jaw_id=str(uuid4())
-    template=tracking['frames'][-1];tracking['frames']=[]
+    template=tracking['frames'][-1];template['condition']='B';tracking['frames']=[]
     for i in range(240):
         f=copy.deepcopy(template);f.update(monotonic_ms=i*50,trial_id=neutral_id if i<200 else jaw_id,evaluation_action='neutral' if i<200 else 'jaw',expected_face_visible=True,active_ms=None,frame_to_render_submit_ms=10,video_present_to_render_submit_ms=8)
         for key in LEGACY_PROTOCOL['coefficients']:
@@ -39,7 +39,7 @@ class EvaluationTests(unittest.TestCase):
             t['calibration']['avatar_key']='other';self.assertTrue(validate_evaluation(data))
         data=evaluation_fixture();del data['tracking']['frames'][0]['target_eyeBlinkLeft'];self.assertTrue(validate_evaluation(data))
     def test_previous_v3_record_remains_valid_without_catalog_or_target_channels(self):
-        data=evaluation_fixture()['tracking'];data.update(app_version=PREVIOUS_PROTOCOL['app_version'],protocol_version=PREVIOUS_PROTOCOL['protocol_version'],parameters=copy.deepcopy(PREVIOUS_PROTOCOL['parameters']),model_info={**PREVIOUS_MODEL,'animation_playback_enabled':False})
+        data=evaluation_fixture()['tracking'];data.update(schema_version=PREVIOUS_PROTOCOL['schema_version'],app_version=PREVIOUS_PROTOCOL['app_version'],protocol_version=PREVIOUS_PROTOCOL['protocol_version'],parameters=copy.deepcopy(PREVIOUS_PROTOCOL['parameters']),model_info={**PREVIOUS_MODEL,'animation_playback_enabled':False})
         for f in data['frames']:
             for key in list(f):
                 if key.startswith('target_'):del f[key]

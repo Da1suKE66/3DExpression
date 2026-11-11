@@ -1,13 +1,13 @@
 {
   "name": "ipp31078-local-prototype",
-  "version": "0.3.1",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "description": "Selectable cartoon characters with full eyelids, head pose and engineering evaluation",
   "scripts": {
     "build": "node ../scripts/build.mjs --package",
     "check": "node ../scripts/build.mjs",
-    "test": "node --test ../tests/core.test.mjs ../tests/expressions.test.mjs"
+    "test": "node --test ../tests/core.test.mjs ../tests/expressions.test.mjs ../tests/prerecorded.test.mjs ../tests/ui-flow.test.mjs ../tests/delay.test.mjs ../tests/tracker.test.mjs"
   },
   "dependencies": {
     "three": "0.160.1",

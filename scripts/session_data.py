@@ -5,17 +5,23 @@ from uuid import UUID
 import json
 import math
 import re
+from itertools import permutations
 
 ROOT = Path(__file__).resolve().parents[1]
 PROTOCOL = json.loads((ROOT / 'app/protocol.json').read_text(encoding='utf-8'))
 PARAMS = PROTOCOL['parameters']
 COEFFICIENTS = PROTOCOL['coefficients']
 QUESTIONS = [question['id'] for question in PROTOCOL['questions']]
-PARTICIPANT_COLUMNS = ['participant_id', 'session_id', 'record_kind', 'source_type', 'protocol_version', 'condition_order', 'condition', 'submitted_at', *QUESTIONS, 'comment']
+PARTICIPANT_COLUMNS = ['participant_id', 'session_id', 'record_kind', 'source_type', 'protocol_version', 'condition_order', 'condition', 'block_index', 'condition_position', 'added_delay_ms', 'submitted_at', *QUESTIONS, 'comment', 'open_feedback', 'overall_preference']
 MODEL = json.loads((ROOT / 'app/model_manifest.json').read_text(encoding='utf-8'))
 LEGACY_PROTOCOL = json.loads((ROOT / 'app/protocol-v2.json').read_text(encoding='utf-8'))
 LEGACY_MODEL = json.loads((ROOT / 'app/model_manifest-v1.json').read_text(encoding='utf-8'))
 PREVIOUS_PROTOCOL = json.loads((ROOT / 'app/protocol-v3.json').read_text(encoding='utf-8'))
+STATIC_PROTOCOL = json.loads((ROOT / 'app/protocol-v3_1.json').read_text(encoding='utf-8'))
+DYNAMIC_AB_PROTOCOL = json.loads((ROOT / 'app/protocol-v4.json').read_text(encoding='utf-8'))
+CURRENT_CONDITIONS = ('A_prerecorded', 'B_realtime', 'C_delayed')
+def dynamic(protocol): return protocol['schema_version'] in ('4.0.0','5.0.0')
+def conditions_for(protocol): return list(protocol['parameters'].get('condition_mapping',{'A':0,'B':0}))
 PREVIOUS_MODEL = json.loads((ROOT / 'app/model_manifest-v2.json').read_text(encoding='utf-8'))
 AVATAR_CATALOG = json.loads((ROOT / 'app/avatar_catalog.json').read_text(encoding='utf-8'))
 
@@ -24,6 +30,8 @@ def specification(data):
     if isinstance(data,dict) and data.get('protocol_version') == PREVIOUS_PROTOCOL['protocol_version']: return PREVIOUS_PROTOCOL,PREVIOUS_MODEL
     model_info = data.get('model_info') if isinstance(data,dict) else None
     selected = next((m for m in AVATAR_CATALOG['avatars'] if isinstance(model_info,dict) and m['id'] == model_info.get('id')),MODEL)
+    if isinstance(data,dict) and data.get('protocol_version') == STATIC_PROTOCOL['protocol_version']: return STATIC_PROTOCOL,selected
+    if isinstance(data,dict) and data.get('protocol_version') == DYNAMIC_AB_PROTOCOL['protocol_version']: return DYNAMIC_AB_PROTOCOL,selected
     return PROTOCOL,selected
 
 def number(value, low=0, high=1):
@@ -64,7 +72,9 @@ def base_errors(data, record_type):
     for key in ['started_at', 'ended_at', 'exported_at']:
         if not timestamp(data.get(key)):
             errors.append(key + ' 必须含时区')
-    if data.get('parameters') != params:
+    expected_params = {**params, 'added_delay_ms': data.get('parameters',{}).get('added_delay_ms')} if protocol['schema_version'] == '5.0.0' and isinstance(data.get('parameters'),dict) else params
+    if protocol['schema_version'] == '5.0.0' and (not isinstance(data.get('parameters'),dict) or type(data['parameters'].get('added_delay_ms')) is not int or not 0 <= data['parameters']['added_delay_ms'] <= 2000): errors.append('附加延迟须为0–2000ms整数')
+    if data.get('parameters') != expected_params:
         errors.append('固定参数被改变，不能与当前协议混用')
     calibration = data.get('calibration')
     if not isinstance(calibration, dict) or calibration.get('status') != 'complete' or not number(calibration.get('sample_count'), params['calibration_min_samples'], 10000) or calibration.get('duration_ms') != params['calibration_ms']:
@@ -76,7 +86,7 @@ def base_errors(data, record_type):
     model = data.get('model_info')
     if not isinstance(model, dict) or model.get('id') != model_spec['id'] or model.get('sha256') != model_spec['sha256'] or model.get('animation_playback_enabled') is not False:
         errors.append('化身身份、校验和或动画状态不匹配')
-    if protocol['protocol_version'] == 'IPP31078-AB90-v3.1':
+    if protocol['protocol_version'] in ('IPP31078-AB90-v3.1', DYNAMIC_AB_PROTOCOL['protocol_version'], PROTOCOL['protocol_version']):
         if not isinstance(model,dict) or model.get('avatar_key') != model_spec['key'] or model.get('catalog_id') != AVATAR_CATALOG['id']:
             errors.append('卡通角色选择未正确记录')
         if not isinstance(calibration,dict) or calibration.get('avatar_key') != model_spec['key'] or calibration.get('model_sha256') != model_spec['sha256']:
@@ -99,7 +109,8 @@ def frame_errors(data, study=True):
             errors.append('帧时间戳无效或逆行'); break
         previous_time = frame['monotonic_ms']
         condition = frame.get('condition')
-        if condition not in ('A', 'B') or type(frame.get('detected')) is not int or frame['detected'] not in (0, 1) or frame.get('paused') not in (0, 1):
+        allowed = conditions_for(protocol) if study and dynamic(protocol) else ('A', 'B', 'static_neutral')
+        if condition not in allowed or type(frame.get('detected')) is not int or frame['detected'] not in (0, 1) or frame.get('paused') not in (0, 1):
             errors.append('条件、检测或暂停标记无效'); break
         if frame.get('sample_kind') not in ('result', 'tracking_timeout'):
             errors.append('帧来源类型不适用于实时记录'); break
@@ -111,6 +122,16 @@ def frame_errors(data, study=True):
             order = data.get('condition_order') if isinstance(data.get('condition_order'), list) else []
             if condition not in order:
                 errors.append('帧条件不在预先设置的顺序中'); break
+            if dynamic(protocol):
+                if frame.get('protocol_version') != data.get('protocol_version') or frame.get('condition_order') != ''.join(c[0] for c in order) or frame.get('block_index') != order.index(condition)+1:
+                    errors.append('帧的协议、顺序或条件位置无效'); break
+                stimulus = data.get('prerecorded_stimulus') if isinstance(data.get('prerecorded_stimulus'),dict) else {}
+                if condition == 'A_prerecorded':
+                    pos = frame.get('prerecorded_position_ms'); offset = stimulus.get('offset_ms')
+                    if frame.get('prerecorded_sha256') != stimulus.get('sha256') or not number(pos,0,3600000) or not number(offset,0,3600000) or abs(pos-offset-active)>1:
+                        errors.append('预录素材摘要或采样位置不匹配'); break
+                elif frame.get('prerecorded_sha256') is not None or frame.get('prerecorded_position_ms') is not None:
+                    errors.append('实时B不能标注为预录驱动'); break
         for metric in ['render_fps', 'tracking_update_hz', 'avatar_update_hz']:
             if frame.get(metric) is not None and not number(frame[metric], 0, 10000):
                 errors.append('实际更新率或帧率字段无效'); break
@@ -118,17 +139,25 @@ def frame_errors(data, study=True):
             errors.append('推理耗时无效'); break
         for key in coefficients:
             raw, corrected, applied = frame.get('raw_' + key), frame.get('corrected_' + key), frame.get('applied_' + key)
-            if not number(applied) or (condition == 'A' and applied != 0) or (not frame['detected'] and applied != 0):
+            if not number(applied) or (condition in ('A','static_neutral') and applied != 0) or (not frame['detected'] and applied != 0):
                 errors.append('静态或丢失状态存在非零驱动，或应用系数越界'); break
             if frame['detected'] and (not number(raw) or not number(corrected)):
                 errors.append('已检测帧缺少有效系数'); break
             if not frame['detected'] and (raw is not None or corrected is not None):
                 errors.append('丢失帧不能填入虚构原始系数'); break
-            if protocol['protocol_version'] == 'IPP31078-AB90-v3.1':
+            if study and dynamic(protocol):
+                live = frame.get('live_filtered_'+key)
+                if (frame['detected'] and not number(live)) or (not frame['detected'] and live is not None):
+                    errors.append('缺少真实跟踪的滤波后系数'); break
+                if frame.get('paused') and applied != 0:
+                    errors.append('暂停时面部应回中性'); break
+                if condition == 'B_realtime' and not frame.get('paused') and frame['detected'] and applied != live:
+                    errors.append('实时B未使用本人的滤波后系数'); break
+            if protocol['protocol_version'] in ('IPP31078-AB90-v3.1', DYNAMIC_AB_PROTOCOL['protocol_version'], PROTOCOL['protocol_version']):
                 target = frame.get('target_' + key)
                 if (frame['detected'] and not number(target)) or (not frame['detected'] and target is not None):
                     errors.append('闭眼重定向后的目标系数缺失或越界'); break
-        if protocol['schema_version'] == '3.0.0':
+        if protocol['schema_version'] in ('3.0.0','4.0.0','5.0.0'):
             if type(frame.get('pose_valid')) is not bool:
                 errors.append('缺少头部姿态有效性标记'); break
             for axis, limit in params['head_rotation_limits_rad'].items():
@@ -153,15 +182,32 @@ def validate_session(data):
     if data.get('status') not in ('complete', 'aborted'):
         errors.append('须先完成或结束体验再保存')
     order = data.get('condition_order')
-    if order not in (['A', 'B'], ['B', 'A']):
-        errors.append('条件顺序须为AB或BA'); order = []
+    protocol, _ = specification(data)
+    conditions = conditions_for(protocol)
+    questions = [q['id'] for q in protocol['questions']]
+    if dynamic(protocol):
+        if data.get('question_items') != protocol['questions'] or data.get('task_plan') != protocol['tasks']:
+            errors.append('问卷条目或任务计划与当前协议不一致')
+        stimulus = data.get('prerecorded_stimulus')
+        model = data.get('model_info') if isinstance(data.get('model_info'),dict) else {}
+        if not isinstance(stimulus,dict):
+            errors.append('缺少独立预录素材信息')
+        elif (stimulus.get('source_type') != 'live_camera' or stimulus.get('independence_confirmed') is not True
+              or not isinstance(stimulus.get('sha256'),str) or not re.fullmatch(r'[a-f0-9]{64}',stimulus['sha256'])
+              or not participant_id(stimulus.get('donor_id')) or stimulus['donor_id'] == data.get('participant_id')
+              or stimulus.get('avatar_key') != model.get('avatar_key') or stimulus.get('model_sha256') != model.get('sha256')
+              or not number(stimulus.get('duration_ms'),protocol['parameters']['duration_ms'] if protocol['schema_version']=='5.0.0' else 120000,3600000) or stimulus.get('window_ms') != protocol['parameters']['duration_ms']
+              or not number(stimulus.get('offset_ms'),0,max(0,stimulus.get('duration_ms',0)-protocol['parameters']['duration_ms']))):
+            errors.append('预录素材来源、独立性、模型或时间窗口无效')
+    if order not in [list(p) for p in permutations(conditions)]:
+        errors.append('条件顺序须为当前协议条件的完整排列'); order = []
     blocks, ratings = data.get('conditions'), data.get('ratings')
-    if not isinstance(blocks, list) or len(blocks) > 2:
+    if not isinstance(blocks, list) or len(blocks) > len(conditions):
         errors.append('条件记录无效'); blocks = []
-    if not isinstance(ratings, list) or len(ratings) > 2:
+    if not isinstance(ratings, list) or len(ratings) > len(conditions):
         errors.append('自评记录无效'); ratings = []
     for index, block in enumerate(blocks):
-        if not isinstance(block, dict) or index >= len(order) or block.get('condition') != order[index] or block.get('block_index') != index + 1 or not number(block.get('active_ms'), 0, 90000):
+        if not isinstance(block, dict) or index >= len(order) or block.get('condition') != order[index] or block.get('block_index') != index + 1 or not number(block.get('active_ms'), 0, protocol['parameters']['duration_ms']):
             errors.append('条件记录顺序或时长不符')
     seen = set()
     for rating in ratings:
@@ -177,24 +223,67 @@ def validate_session(data):
                 errors.append('自评身份或来源字段不一致')
         if data.get('protocol_version') == PROTOCOL['protocol_version'] and rating.get('protocol_version') != data['protocol_version']:
             errors.append('自评缺少当前协议版本')
-        if rating.get('condition_order') != ''.join(order) or not timestamp(rating.get('submitted_at')):
+        if rating.get('condition_order') != ''.join(c[0] for c in order) or not timestamp(rating.get('submitted_at')):
             errors.append('自评顺序或时间戳无效')
-        if any(type(rating.get(key)) is not int or not 1 <= rating[key] <= 7 for key in QUESTIONS):
-            errors.append('四题评分须为1–7整数')
+        if protocol['protocol_version'] == PROTOCOL['protocol_version'] and (condition not in order or rating.get('block_index') != order.index(condition)+1):
+            errors.append('自评条件位置无效')
+        if any(type(rating.get(key)) is not int or not 1 <= rating[key] <= 7 for key in questions):
+            errors.append('所有问卷条目须为1–7整数')
         if not isinstance(rating.get('comment', ''), str) or len(rating.get('comment', '')) > 1000:
             errors.append('开放反馈无效')
     errors.extend(frame_errors(data))
+    if protocol['schema_version']=='5.0.0': errors.extend(current_study_errors(data))
     if data.get('status') == 'complete':
-        if len(blocks) != 2 or len(ratings) != 2 or seen != {'A', 'B'}:
-            errors.append('完整体验必须包含两条件与两份四题自评')
+        if len(blocks) != len(conditions) or len(ratings) != len(conditions) or seen != set(conditions):
+            errors.append('完整体验必须包含全部条件及每条件一份自评')
         for block in blocks:
-            if not isinstance(block, dict) or block.get('status') != 'completed' or block.get('active_ms') != 90000:
-                errors.append('每条件须完成90000毫秒有效任务')
+            if not isinstance(block, dict) or block.get('status') != 'completed' or block.get('active_ms') != protocol['parameters']['duration_ms']:
+                errors.append('每条件有效任务时长须与当前协议一致')
         frames = data.get('frames') if isinstance(data.get('frames'), list) else []
-        for condition in ('A', 'B'):
+        for condition in conditions:
             if not any(isinstance(frame, dict) and frame.get('condition') == condition and frame.get('detected') == 1 for frame in frames):
                 errors.append(condition + ' 缺少真实输入声明下的检测帧（仍需人工核验）')
     return list(dict.fromkeys(errors))
+
+def current_study_errors(data):
+    errors=[];order=data.get('condition_order') if isinstance(data.get('condition_order'),list) else []
+    params=data.get('parameters') if isinstance(data.get('parameters'),dict) else {}
+    delay=params.get('added_delay_ms'); duration=PROTOCOL['parameters']['duration_ms']
+    blocks=data.get('conditions') if isinstance(data.get('conditions'),list) else []
+    ratings=data.get('ratings') if isinstance(data.get('ratings'),list) else []
+    for row in blocks+ratings:
+        if not isinstance(row,dict):continue
+        expected=delay if row.get('condition')=='C_delayed' else 0
+        if row.get('condition_position') != row.get('block_index') or row.get('added_delay_ms')!=expected:errors.append('条件位置或附加延迟未正确记录')
+    for row in ratings:
+        if isinstance(row,dict) and row.get('open_feedback')!=row.get('comment'):errors.append('开放反馈字段不一致')
+    sources={}
+    frames=data.get('frames') if isinstance(data.get('frames'),list) else []
+    for f in frames:
+        if not isinstance(f,dict):continue
+        c=f.get('condition'); state=f.get('feedback_state');active=f.get('detected')==1 and not f.get('paused')
+        if (f.get('condition_position')!=f.get('block_index') or f.get('timestamp')!=f.get('captured_at') or f.get('task_id')!=f.get('task') or type(f.get('tracking_valid')) is not bool or f['tracking_valid']!=(f.get('detected')==1) or f.get('tracking_fps')!=f.get('tracking_update_hz') or f.get('added_delay_ms')!=(delay if c=='C_delayed' else 0)):errors.append('逐帧条件、任务、时间或跟踪字段不一致');break
+        for key in ['camera_input_fps','software_latency_ms','actual_buffer_delay_ms','normal_processing_ms']:
+            if f.get(key) is not None and not number(f[key],0,120000):errors.append(key+'无效')
+        source_time=f.get('input_timestamp_ms');available=f.get('input_available_at_ms')
+        if active and c=='C_delayed' and number(source_time,0,1e12) and number(available,source_time,1e12):sources[source_time]=f
+        if c=='A_prerecorded' or not active or state=='warming_up':
+            if any(f.get(k) is not None for k in ['feedback_input_timestamp_ms','feedback_buffer_enqueue_ms','feedback_applied_at_ms','actual_buffer_delay_ms','software_latency_ms']):errors.append('非实时对应输出不应记录响应延迟');break
+            if state=='warming_up' and any(f.get('applied_'+k)!=0 for k in COEFFICIENTS):errors.append('缓冲不足时应为中性输出');break
+            continue
+        if c=='C_delayed':
+            target_time=f.get('feedback_input_timestamp_ms')
+            source=sources.get(target_time) if number(target_time,0,1e12) else None
+            enqueue=f.get('feedback_buffer_enqueue_ms');applied=f.get('feedback_applied_at_ms');actual=f.get('actual_buffer_delay_ms')
+            if (state!='ready' or source is None or not number(delay,0,2000) or not number(enqueue,0,1e12) or not number(applied,enqueue,1e12) or not number(actual,delay,delay+PARAMS['tracking_stale_ms']+100) or abs(actual-(applied-enqueue))>0.01 or enqueue!=source.get('input_available_at_ms') or any(f.get('applied_'+k)!=source.get('live_filtered_'+k) for k in COEFFICIENTS)):
+                errors.append('C输出、输入关联或实际缓冲延迟无效');break
+        elif c=='B_realtime' and (state!='ready' or f.get('feedback_input_timestamp_ms')!=source_time or f.get('actual_buffer_delay_ms')!=0):errors.append('B实时关联或零附加延迟无效');break
+    preference=data.get('preference')
+    if data.get('status')=='complete':
+        if not isinstance(preference,dict):errors.append('三条件完成后缺少整体偏好')
+        elif (preference.get('selected_condition') not in (*CURRENT_CONDITIONS,'no_preference') or not timestamp(preference.get('submitted_at')) or preference.get('participant_id')!=data.get('participant_id') or preference.get('session_id')!=data.get('session_id') or preference.get('condition_order')!=''.join(c[0] for c in order)):errors.append('整体偏好身份、顺序、选项或时间无效')
+        elif any(isinstance(row,dict) and row.get('overall_preference')!=preference['selected_condition'] for row in ratings):errors.append('问卷所附整体偏好不一致')
+    return errors
 
 def validate_tracking(data):
     errors = base_errors(data, 'tracking_recording')

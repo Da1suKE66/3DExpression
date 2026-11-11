@@ -6,10 +6,10 @@ import { readTrackingFile, TrackingReplay } from '../app/replay.js';
 
 const model = JSON.parse(fs.readFileSync(new URL('../app/model_manifest.json',import.meta.url),'utf8'));
 const baseline = () => makeCalibration(Array.from({length:40},()=>Object.fromEntries(COEFFICIENTS.map(key=>[key,0.02]))),{source_type:'synthetic_test',avatar_key:model.key,model_sha256:model.sha256});
-const make = order => makeSession({ id:'00000000-0000-4000-8000-000000000001',participantId:'TEST01',order:order||['A','B'],kind:'internal',consent:true,sourceType:'synthetic_test',calibration:baseline(),now:'2026-11-07T01:00:00+08:00',modelInfo:{id:model.id,avatar_key:model.key,sha256:model.sha256} });
+const make = order => makeSession({ id:'00000000-0000-4000-8000-000000000001',participantId:'TEST01',order:order||['A_prerecorded','B_realtime','C_delayed'],kind:'internal',consent:true,sourceType:'synthetic_test',calibration:baseline(),stimulusConfirmed:true,prerecorded:{source_type:'live_camera',sha256:'a'.repeat(64),donor_id:'STIMULUS01',avatar_key:model.key,model_sha256:model.sha256,duration_ms:120000,offset_ms:1000,window_ms:60000},now:'2026-11-07T01:00:00+08:00',modelInfo:{id:model.id,avatar_key:model.key,sha256:model.sha256} });
 const at = '2026-11-07T01:00:00+08:00';
 
-test('A remains neutral while B follows all seventeen bounded expression signals',()=>{
+test('legacy demo A remains neutral while demo B follows all seventeen expression signals',()=>{
  const raw=Object.fromEntries(COEFFICIENTS.map((key,index)=>[key,(index+1)/(COEFFICIENTS.length+1)]));
  assert.ok(Object.values(mapExpression(raw,'A')).every(value=>value===0));assert.deepEqual(mapExpression(raw,'B'),raw);assert.throws(()=>mapExpression(raw,'third'));
 });
@@ -32,28 +32,33 @@ test('reported update rate uses observed timestamps and becomes unavailable afte
  const meter=new RateMeter();assert.equal(meter.value(0),null);for(let t=0;t<=1000;t+=50)meter.mark(t);
  assert.equal(meter.value(1000),20);assert.equal(meter.value(4000),null);
 });
-test('90 second task plan has jaw, blink, smile and free combination boundaries',()=>{
- assert.equal(TASKS.reduce((sum,task)=>sum+task.duration_ms,0),90000);assert.equal(taskAt(0).id,'jaw');assert.equal(taskAt(20000).id,'blink');assert.equal(taskAt(40000).id,'smile');assert.equal(taskAt(60000).id,'free');assert.equal(taskAt(90000),null);assert.equal(QUESTIONS.length,4);
+test('60 second plan has adaptation, basic actions, free expression and observation',()=>{
+ assert.equal(TASKS.reduce((sum,task)=>sum+task.duration_ms,0),60000);assert.equal(taskAt(0).id,'adapt');assert.equal(taskAt(10000).id,'basic');assert.equal(taskAt(30000).id,'free');assert.equal(taskAt(50000).id,'observe');assert.equal(taskAt(60000),null);assert.equal(QUESTIONS.length,6);
 });
 test('anonymous ID, consent and calibration are required before creating a study',()=>{
  const s=make();assert.equal(s.source_type,'synthetic_test');assert.equal(s.ratings.length,0);
  assert.throws(()=>makeSession({...s,id:s.session_id,participantId:'x',order:['A','B'],kind:'internal',consent:true,calibration:baseline(),now:at}));
  assert.throws(()=>makeSession({id:'x',participantId:'TEST',order:['A','B'],kind:'internal',consent:false,calibration:baseline(),now:at}));
- assert.deepEqual(suggestedOrder('P02'),['B','A']);assert.deepEqual(suggestedOrder('P01'),['A','B']);
+ assert.deepEqual(suggestedOrder('P02'),['A','C','B']);assert.deepEqual(suggestedOrder('P01'),['A','B','C']);
 });
 test('lost face, hidden page and manual pause never add effective task time',()=>{
  const c=new StudyController(make());c.begin(0,at);c.tick(50,at,{tracked:true,visible:true});assert.equal(c.activeMs,50);
  c.tick(100,at,{tracked:false,visible:true});c.tick(150,at,{tracked:true,visible:false});c.paused=true;c.tick(200,at,{tracked:true,visible:true});assert.equal(c.activeMs,50);
  c.paused=false;c.tick(250,at,{tracked:true,visible:true});assert.equal(c.activeMs,100);
 });
-test('BA lifecycle requires two 90 second blocks, separate ratings and the fixed rest',()=>{
- const c=new StudyController(make(['B','A']));c.begin(0,at);assert.equal(c.block.condition,'B');let time=0;
- while(c.phase==='running'){time+=50;c.tick(time,at,{tracked:true,visible:true});}
- assert.equal(c.block.active_ms,90000);assert.equal(c.phase,'survey');assert.throws(()=>c.rate({control:8},'',time,at));
- const scores=Object.fromEntries(QUESTIONS.map(q=>[q.id,4]));c.rate(scores,'synthetic unit fixture',time,at);assert.throws(()=>c.begin(time,at));time+=15000;c.begin(time,at);assert.equal(c.block.condition,'A');
- while(c.phase==='running'){time+=50;c.tick(time,at,{tracked:true,visible:true});}
- c.rate(scores,'synthetic unit fixture',time,at);assert.equal(c.phase,'complete');assert.equal(c.session.ratings.length,2);assert.equal(c.session.parameters.gain.jawOpen,1);
+test('three 60 second blocks require three ratings and a final anonymous preference',()=>{
+ const c=new StudyController(make());let time=0;const scores=Object.fromEntries(QUESTIONS.map(q=>[q.id,4]));
+ for(let index=0;index<3;index++){
+  c.begin(time,at);assert.equal(c.block.condition_position,index+1);
+  while(c.phase==='running'){time+=50;c.tick(time,at,{tracked:true,visible:true});}
+  assert.equal(c.block.active_ms,60000);assert.throws(()=>c.rate({control:8},'',time,at));
+  c.rate(scores,'synthetic unit fixture',time,at);
+  if(index<2){assert.throws(()=>c.begin(time,at));time+=15000;}
+ }
+ assert.equal(c.phase,'preference');assert.throws(()=>c.prefer('invalid',time,at));c.prefer('no_preference',time,at);
+ assert.equal(c.phase,'complete');assert.equal(c.session.ratings.length,3);assert.equal(c.session.preference.selected_condition,'no_preference');
 });
+
 test('aborting retains partial time without fabricating completion or scores',()=>{
  const c=new StudyController(make());c.begin(0,at);c.tick(50,at,{tracked:true,visible:true});c.abort('test_abort',80,at);
  assert.equal(c.session.status,'aborted');assert.equal(c.session.conditions[0].active_ms,50);assert.equal(c.session.ratings.length,0);

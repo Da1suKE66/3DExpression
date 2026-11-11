@@ -24,7 +24,9 @@ STORE_LOCK = threading.RLock()
 def append_questionnaires(root, data):
     if data['source_type'] != 'live_camera' or data['status'] != 'complete':
         return []
-    table = root / 'data/raw/participants.csv'
+    if data['protocol_version'] != PROTOCOL['protocol_version']:
+        return ['旧协议JSON已另存，历史问卷表保持不变；请使用相应旧版分析程序']
+    table = root / ('data/raw/participants_v5.csv' if data['protocol_version'] == PROTOCOL['protocol_version'] else 'data/raw/participants.csv')
     warnings = []
     with STORE_LOCK:
         existing, fields = [], list(PARTICIPANT_COLUMNS)
@@ -47,7 +49,7 @@ def append_questionnaires(root, data):
         with temp.open('w', encoding='utf-8-sig', newline='') as handle:
             writer = csv.DictWriter(handle, fieldnames=fields); writer.writeheader(); writer.writerows(existing)
         temp.replace(table)
-        register('PARTICIPANTS-TABLE', 'data', table, 'real_live_camera_questionnaires_and_manual_table', 'questionnaire_records_not_independently_verified', 'pending_manual_verification', 'yes', '仅完整实时会话追加；内部与探索性用途分开，重复导出不重复追加。', root=root)
+        register('PARTICIPANTS-V5-TABLE' if data['protocol_version'] == PROTOCOL['protocol_version'] else 'PARTICIPANTS-TABLE', 'data', table, 'real_live_camera_questionnaires_and_manual_table', 'questionnaire_records_not_independently_verified', 'pending_manual_verification', 'yes', '仅完整实时会话追加；内部与探索性用途分开，重复导出不重复追加。', root=root)
     return warnings
 
 class Handler(SimpleHTTPRequestHandler):
@@ -99,15 +101,16 @@ class Handler(SimpleHTTPRequestHandler):
             return self.json_response(415, {'error': '须发送application/json'})
         try:
             size = int(self.headers.get('Content-Length', '0'))
-            if not 0 < size <= 32 * 1024 * 1024:
-                return self.json_response(413, {'error': '记录为空或超过32MB'})
+            limit_mb = 128 if route == '/api/sessions' else 32
+            if not 0 < size <= limit_mb * 1024 * 1024:
+                return self.json_response(413, {'error': f'记录为空或超过{limit_mb}MB'})
             data = json.loads(self.rfile.read(size), parse_constant=lambda value: (_ for _ in ()).throw(ValueError('Non-finite JSON')))
             errors = validate_session(data) if route == '/api/sessions' else validate_evaluation(data) if route == '/api/evaluations' else validate_tracking(data)
             if errors:
                 return self.json_response(422, {'error': '；'.join(errors)})
             root = Path(getattr(self.server, 'project_root', ROOT))
             export_id = str(uuid4()); synthetic = data['source_type'] == 'synthetic_test'
-            folder = 'evidence/testing/v3/sessions' if synthetic else 'data/raw/evaluations' if route == '/api/evaluations' else 'data/raw/live_sessions' if route == '/api/sessions' else 'data/raw/tracking'
+            folder = ('evidence/testing/v5/sessions' if data['protocol_version'] == PROTOCOL['protocol_version'] else 'evidence/testing/v3/sessions') if synthetic else 'data/raw/evaluations' if route == '/api/evaluations' else 'data/raw/live_sessions' if route == '/api/sessions' else 'data/raw/tracking'
             destination = root / folder / (data['session_id'] + '_' + export_id[:8] + '.json')
             destination.parent.mkdir(parents=True, exist_ok=True)
             with STORE_LOCK:

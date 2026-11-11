@@ -28,3 +28,6 @@ input/
 project_meta.json
 PROJECT_STATE.md
 MIGRATION_MANIFEST.json
+
+# Local evidence index can contain participant IDs and private file references
+evidence/manifest.csv

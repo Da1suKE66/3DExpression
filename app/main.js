@@ -1,10 +1,13 @@
-import { createAvatar } from './avatar.js?v=0.3.1';
-import { CameraTracker } from './tracker.js?v=0.3.1';
-import { DemoRecorder } from './recording.js?v=0.3.1';
-import { TrackingReplay, readTrackingFile } from './replay.js?v=0.3.1';
-import { POSE_AXES, zeroPose, validPose, relativePose, PoseFilter, ACTIONS, actionStrength } from './expressions.js?v=0.3.1';
-import { EngineeringEvaluation } from './evaluation.js?v=0.3.1';
-import { APP_VERSION, PROTOCOL_VERSION, SCHEMA_VERSION, PROJECT_ID, PARAMS, QUESTIONS, COEFFICIENTS, neutral, median, makeCalibration, correctExpression, mapExpression, retargetExpression, ExpressionFilter, RateMeter, taskAt, validParticipantId, suggestedOrder, makeSession, StudyController, csv, FRAME_COLUMNS, RATING_COLUMNS } from './core.js?v=0.3.1';
+import { createAvatar } from './avatar.js?v=0.5.0';
+import { CameraTracker } from './tracker.js?v=0.5.0';
+import { DemoRecorder } from './recording.js?v=0.5.0';
+import { TrackingReplay, readTrackingFile } from './replay.js?v=0.5.0';
+import { POSE_AXES, zeroPose, validPose, relativePose, PoseFilter, ACTIONS, actionStrength } from './expressions.js?v=0.5.0';
+import { EngineeringEvaluation } from './evaluation.js?v=0.5.0';
+import { readPrerecordedFile, PrerecordedPlayback, expressionProfile } from './prerecorded.js?v=0.5.0';
+import { ExpressionDelayBuffer } from './delay.js?v=0.5.0';
+import { CONDITIONS, ORDER_CODES, PREFERENCE_COLUMNS, studyOrder, orderCode } from './core.js?v=0.5.0';
+import { APP_VERSION, PROTOCOL_VERSION, SCHEMA_VERSION, PROJECT_ID, PARAMS, QUESTIONS, COEFFICIENTS, neutral, median, makeCalibration, correctExpression, mapExpression, retargetExpression, ExpressionFilter, RateMeter, taskAt, validParticipantId, suggestedOrder, makeSession, StudyController, csv, FRAME_COLUMNS, RATING_COLUMNS } from './core.js?v=0.5.0';
 
 const el = id => document.getElementById(id);
 const iso = () => new Date().toISOString();
@@ -16,11 +19,16 @@ const video = el('webcam');
 let avatar, ready = false, loading = false, mode = query.get('mode') === 'demo' ? 'demo' : 'study', demoCondition = 'B';
 let connectionSequence = 0;
 let calibration = null, calibrating = null, study = null, clip = null, replay = null;
+let stimulus = null, stimulusPlayback = null, stimulusLoading = false, stimulusPosition = null;
 let exported = false, clipExported = true, lastPhase = '', lastTask = '', lastUI = -Infinity;
 let detected = false, lastResultAt = -Infinity, raw = neutral(), corrected = neutral(), targetExpression = neutral(), filtered = neutral(), applied = neutral();
 let recorder = null, recordedVideo = null, lastVideoLabel = -1, frameSequence = 0;
 let lastRenderAt = -Infinity, cameraWasLive = false;
 let rawPose = null, correctedPose = zeroPose(), appliedPose = zeroPose(), pendingFrame = null;
+let renderedPose = zeroPose(), lastInput = null, appliedFeedback = null, feedbackAppliedAt = null, feedbackState = 'neutral', feedbackCondition = null;
+const delayBuffer = new ExpressionDelayBuffer(PARAMS.added_delay_ms, PARAMS.tracking_stale_ms);
+function resetFeedback(reason) { delayBuffer.reset(reason); lastInput = null; appliedFeedback = null; feedbackAppliedAt = null; }
+function ensureFeedbackCondition() { if (feedbackCondition !== condition()) { resetFeedback('condition_changed'); feedbackCondition = condition(); } }
 const poseFilter = new PoseFilter(PARAMS.head_smoothing_tau_ms);
 const filter = new ExpressionFilter(), renderRate = new RateMeter(), resultRate = new RateMeter(), applyRate = new RateMeter();
 const tracker = new CameraTracker(video, (text, progress) => { el('load-state').textContent = text; el('load-progress').value = progress; });
@@ -28,12 +36,28 @@ const evaluation = new EngineeringEvaluation(() => makeTrackingRecord());
 const sourceType = () => replay ? 'recorded_tracking' : testSource ? 'synthetic_test' : 'live_camera';
 const activeStudy = () => study && !['ready', 'complete', 'aborted'].includes(study.phase);
 const tracked = () => detected && performance.now() - lastResultAt <= PARAMS.tracking_stale_ms && (replay ? replay.playing : tracker.live());
-const condition = () => mode === 'study' ? study?.phase === 'running' ? study.block.condition : 'A' : demoCondition;
+const condition = () => mode === 'study' ? study?.phase === 'running' ? study.block.condition : 'static_neutral' : demoCondition;
 const viewportMatches = () => !study || (Math.abs(innerWidth - study.session.viewport.width) <= 2 && Math.abs(innerHeight - study.session.viewport.height) <= 2);
 function message(text) { el('message').textContent = text; }
 function log(type, details = {}) { const now = performance.now(), at = iso(); if (study) study.event(type, now, at, details); if (clip?.status === 'recording') clip.events.push({ type, at, monotonic_ms: now, ...details }); }
-function renderExpression(now = performance.now()) { applied = mapExpression(tracked() ? filtered : neutral(), condition()); avatar?.apply(applied); avatar?.applyPose(tracked() && (mode === 'demo' || study?.phase === 'running') ? appliedPose : zeroPose()); applyRate.mark(now); }
-function clearSignal() { detected = false; raw = neutral(); corrected = neutral(); targetExpression = neutral(); filtered = neutral(); rawPose = null; correctedPose = zeroPose(); appliedPose = zeroPose(); filter.reset(); poseFilter.reset(); renderExpression(); }
+function renderExpression(now = performance.now()) {
+  ensureFeedbackCondition();
+  const current = condition(); stimulusPosition = null; appliedFeedback = null; feedbackAppliedAt = null;
+  let prerecorded = null, output = filtered;
+  if (current === 'A_prerecorded') { const sample = stimulusPlayback.sample(study.activeMs); prerecorded = sample.expression; stimulusPosition = sample.position_ms; }
+  const canDrive = tracked() && (mode === 'demo' || (study?.phase === 'running' && !study.paused && viewportMatches() && !document.hidden));
+  feedbackState = !canDrive ? 'inactive' : current === 'A_prerecorded' ? 'prerecorded' : 'ready';
+  if (canDrive && current === 'C_delayed') {
+    appliedFeedback = delayBuffer.sample(now);
+    if (appliedFeedback) output = appliedFeedback.expression;
+    else { output = neutral(); feedbackState = 'warming_up'; }
+  } else if (canDrive && ['B','B_realtime'].includes(current)) appliedFeedback = lastInput;
+  if (appliedFeedback) feedbackAppliedAt = now;
+  applied = canDrive ? mapExpression(output, current, prerecorded) : neutral();
+  renderedPose = canDrive ? appliedPose : zeroPose();
+  avatar?.apply(applied); avatar?.applyPose(renderedPose); applyRate.mark(now);
+}
+function clearSignal() { resetFeedback('signal_cleared'); detected = false; raw = neutral(); corrected = neutral(); targetExpression = neutral(); filtered = neutral(); rawPose = null; correctedPose = zeroPose(); appliedPose = zeroPose(); filter.reset(); poseFilter.reset(); renderExpression(); }
 function sourceLabel() { if (replay) return replay.record.origin === 'synthetic_test' ? '参数回放 · 合成测试来源' : '参数回放 · recorded_tracking'; return testSource ? '软件测试 · synthetic_test' : tracker.live() ? '实时摄像头 · live_camera' : '等待连接'; }
 
 async function startCamera() {
@@ -51,7 +75,7 @@ async function startCamera() {
 }
 function stopCamera(reason = 'camera_stopped') {
   connectionSequence++;
-  if (activeStudy()) { study.abort(reason, performance.now(), iso()); exported = false; }
+  if (activeStudy() && study.phase !== 'preference') { study.abort(reason, performance.now(), iso()); exported = false; }
   if (clip?.status === 'recording') finishClip(reason);
   if (recorder?.active) recorder.stop(reason);
   if (evaluation.active) evaluation.stop(performance.now(), iso(), tracker.quality(), reason);
@@ -79,7 +103,7 @@ function calibrationSample(sample) {
     const headBaseline = calibrating.poses.length >= PARAMS.calibration_min_samples ? Object.fromEntries(POSE_AXES.map(axis => [axis, median(calibrating.poses.map(p => p[axis]))])) : null;
     calibration = makeCalibration(calibrating.samples, { calibration_id: crypto.randomUUID(), source_type: sourceType(), started_at: calibrating.started_at, ended_at: iso(), observed_duration_ms: observedDuration, head_baseline: headBaseline, head_pose_sample_count: calibrating.poses.length, avatar_key: avatar.info.avatar_key, model_sha256: avatar.info.sha256 });
     filter.reset(); log('calibration_completed', { sample_count: calibration.sample_count, calibration_id: calibration.calibration_id });
-    message('中性校准完成。配置将用于两条件，条件间不再改变。');
+    message('中性校准完成。配置将用于三条件，条件间不再改变。');
   } catch (error) { message(error.message); }
   calibrating = null;
 }
@@ -92,18 +116,21 @@ async function switchAvatar() {
   if (!avatar) return;
   const previous = avatar.info.avatar_key, selected = el('avatar-select').value;
   if (replay || activeStudy() || recorder?.active || recordedVideo || clip?.status === 'recording' || (clip && !clipExported) || (study && !exported) || !evaluation.saved) { el('avatar-select').value = previous; return message('请先结束并保存当前体验、评估或录制，再切换角色。'); }
-  ready = false; calibration = null; calibrating = null; clearSignal(); updateUI(true);
+  ready = false; calibration = null; calibrating = null; stimulus = null; stimulusPlayback = null; el('stimulus-confirm').checked = false; clearSignal(); updateUI(true);
   try { await avatar.setAvatar(selected); message('已切换为' + avatar.info.label + '。请保持中性，重新校准；摄像头连接会保留。'); }
   catch (error) { el('avatar-select').value = previous; message('切换角色失败：' + error.message); }
   finally { ready = true; updateUI(true); }
 }
 function startStudy() {
   if (evaluation.active || clip?.status === 'recording' || recorder?.active) return message('请先结束工程评估或录制。');
-  if (replay) return message('参数回放不能用于正式A/B体验。');
+  if (replay) return message('参数回放不能用于正式A/B/C体验。');
   if (!tracked() || !calibration) return message('请先完成中性校准并确认面部追踪稳定。');
   try {
-    const session = makeSession({ id: crypto.randomUUID(), participantId: el('participant-id').value.trim(), order: el('condition-order').value.split(''), kind: el('record-kind').value, consent: el('consent').checked, sourceType: sourceType(), calibration, modelInfo: avatar.info, cameraSettings: tracker.settings(), viewport: { width: innerWidth, height: innerHeight, pixel_ratio: Math.min(devicePixelRatio, PARAMS.max_pixel_ratio) }, now: iso(), userAgent: navigator.userAgent });
-    study = new StudyController(session); exported = false; lastTask = ''; filter.reset();
+    if (!el('added-delay-ms').value.trim()) throw new Error('请填写模式C附加延迟，正式实验默认400ms。');
+    if (!stimulus || stimulusLoading) throw new Error('请先加载独立真实预录参数素材');
+    stimulusPlayback = new PrerecordedPlayback(stimulus, crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32);
+    const session = makeSession({ id: crypto.randomUUID(), participantId: el('participant-id').value.trim(), order: studyOrder(el('condition-order').value), kind: el('record-kind').value, consent: el('consent').checked, sourceType: sourceType(), calibration, modelInfo: avatar.info, prerecorded: stimulusPlayback.metadata(), stimulusConfirmed: el('stimulus-confirm').checked, addedDelayMs: Number(el('added-delay-ms').value), cameraSettings: tracker.settings(), viewport: { width: innerWidth, height: innerHeight, pixel_ratio: Math.min(devicePixelRatio, PARAMS.max_pixel_ratio) }, now: iso(), userAgent: navigator.userAgent });
+    study = new StudyController(session); delayBuffer.configure(session.parameters.added_delay_ms); exported = false; lastTask = ''; filter.reset();
     study.event('session_started', performance.now(), iso()); study.begin(performance.now(), iso()); renderExpression(); updateUI(true);
     message('请按屏幕提示完成任务；没有需要迎合的理想体验。');
   } catch (error) { message(error.message); }
@@ -111,7 +138,12 @@ function startStudy() {
 function submitRating(event) {
   event.preventDefault(); if (!study || study.phase !== 'survey') return;
   const form = new FormData(el('rating-form'));
-  try { study.rate(Object.fromEntries(QUESTIONS.map(q => [q.id, Number(form.get(q.id))])), el('feedback').value.trim(), performance.now(), iso()); updateUI(true); if (study.phase === 'complete') { stopCamera('completed'); message('两条件已完成。请保存记录到项目并下载备份。'); } }
+  try { study.rate(Object.fromEntries(QUESTIONS.map(q => [q.id, Number(form.get(q.id))])), el('feedback').value.trim(), performance.now(), iso()); updateUI(true); if (study.phase === 'preference') { study.session.expression_matching = Object.fromEntries(CONDITIONS.map(c => [c, expressionProfile(study.session.frames.filter(f => f.condition === c && f.detected && !f.paused))])); resetFeedback('tasks_completed'); stopCamera('tasks_completed'); message('三个条件及问卷已完成，请填写整体偏好。'); } }
+  catch (error) { message(error.message); }
+}
+function submitPreference(event) {
+  event.preventDefault(); if (!study || study.phase !== 'preference') return;
+  try { study.prefer(el('preference-choice').value, performance.now(), iso()); stopCamera('completed'); updateUI(true); message('三条件与整体偏好已完成，请保存记录及下载备份。'); }
   catch (error) { message(error.message); }
 }
 function nextCondition() {
@@ -124,21 +156,52 @@ function makeFrame(sample) {
   const now = sample.monotonic_ms;
   const owner = study?.phase === 'running' ? study.session : clip?.status === 'recording' ? clip : null;
   const frame = { session_id: owner?.session_id || null, participant_id: owner?.participant_id || el('participant-id').value.trim(), source_type: sourceType(), condition: condition(), block_index: study?.phase === 'running' ? study.block.block_index : 0, captured_at: iso(), monotonic_ms: Number(now.toFixed(3)), wall_elapsed_ms: study?.phase === 'running' ? Math.round(now - study.block.start_monotonic_ms) : clip?.status === 'recording' ? Math.round(now - clip.start_monotonic_ms) : 0, active_ms: study?.phase === 'running' ? Math.round(study.activeMs) : null, task: study?.phase === 'running' ? taskAt(study.activeMs)?.id || 'finished' : 'demonstration', sample_kind: sample.sample_kind, result_index: sample.sample_kind === 'tracking_timeout' ? null : frameSequence++, detected: Number(sample.detected), paused: Number(Boolean(study?.paused || document.hidden || !sample.detected)), render_fps: renderRate.value(now), tracking_update_hz: resultRate.value(now), avatar_update_hz: applyRate.value(now), inference_ms: sample.inference_ms == null ? null : Number(sample.inference_ms.toFixed(3)) };
+  frame.condition_position = frame.block_index; frame.task_id = frame.task; frame.timestamp = frame.captured_at;
+  frame.tracking_valid = Boolean(sample.detected); frame.tracking_fps = frame.tracking_update_hz; frame.camera_input_fps = tracker.inputFps?.(performance.now()) ?? null;
+  frame.added_delay_ms = condition() === 'C_delayed' ? study.session.parameters.added_delay_ms : 0;
+  frame.input_timestamp_ms = sample.detected ? sample.monotonic_ms : null;
+  frame.input_available_at_ms = sample.detected ? lastInput?.available_at_ms ?? null : null;
+  frame.feedback_state = feedbackState;
+  frame.feedback_input_timestamp_ms = appliedFeedback?.input_timestamp_ms ?? null;
+  frame.feedback_buffer_enqueue_ms = appliedFeedback?.available_at_ms ?? null;
+  frame.feedback_applied_at_ms = feedbackAppliedAt;
+  frame.actual_buffer_delay_ms = appliedFeedback ? condition() === 'C_delayed' ? feedbackAppliedAt - appliedFeedback.available_at_ms : 0 : null;
+  frame.feedback_processing_start_ms = appliedFeedback?.processing_start_ms ?? null;
+  frame.feedback_frame_capture_ms = appliedFeedback?.frame_capture_at_ms ?? null;
+  frame.feedback_video_presentation_ms = appliedFeedback?.video_presentation_at_ms ?? null;
+  frame.normal_processing_ms = Number.isFinite(frame.feedback_processing_start_ms) ? appliedFeedback.available_at_ms - frame.feedback_processing_start_ms : null;
+  frame.software_latency_ms = null;
+  frame.protocol_version = PROTOCOL_VERSION; frame.condition_order = study?.phase === 'running' ? orderCode(study.session.condition_order) : '';
+  frame.prerecorded_sha256 = condition() === 'A_prerecorded' ? study.session.prerecorded_stimulus.sha256 : null;
+  frame.prerecorded_position_ms = condition() === 'A_prerecorded' ? stimulusPosition : null;
   for (const key of COEFFICIENTS) { frame['raw_' + key] = sample.detected ? raw[key] : null; frame['corrected_' + key] = sample.detected ? corrected[key] : null; frame['target_' + key] = sample.detected ? targetExpression[key] : null; frame['applied_' + key] = applied[key]; }
+  for (const key of COEFFICIENTS) frame['live_filtered_' + key] = sample.detected ? filtered[key] : null;
   frame.pose_valid = Boolean(sample.detected && validPose(rawPose));
-  for (const axis of POSE_AXES) { frame['raw_pose_' + axis] = frame.pose_valid ? rawPose[axis] : null; frame['corrected_pose_' + axis] = sample.detected ? correctedPose[axis] : 0; frame['applied_pose_' + axis] = sample.detected ? appliedPose[axis] : 0; }
+  for (const axis of POSE_AXES) { frame['raw_pose_' + axis] = frame.pose_valid ? rawPose[axis] : null; frame['corrected_pose_' + axis] = sample.detected ? correctedPose[axis] : 0; frame['applied_pose_' + axis] = renderedPose[axis]; }
   for (const key of ['camera_media_time_s','frame_metadata_matched','frame_capture_at_ms','video_presentation_at_ms','video_frame_callback_at_ms','camera_presented_frames']) frame[key] = sample[key] ?? null;
   if (sample.original_captured_at) { frame.original_captured_at = sample.original_captured_at; frame.original_inference_ms = sample.original_inference_ms; }
   return frame;
 }
 function acceptSample(sample) {
+  if (!Number.isFinite(sample.monotonic_ms) || sample.monotonic_ms < 0 || sample.monotonic_ms <= lastResultAt) {
+    log('tracking_timestamp_anomaly'); clearSignal();
+    if (study?.phase === 'running') study.paused = true;
+    message('输入时间戳异常，已清空反馈并暂停；确认追踪恢复后手动继续。'); return;
+  }
   const wasDetected = detected;
   detected = sample.detected; lastResultAt = sample.monotonic_ms;
   if (sample.sample_kind !== 'tracking_timeout') resultRate.mark(sample.monotonic_ms);
   if (sample.detected) { raw = sample.raw; corrected = correctExpression(raw, calibration?.baseline); targetExpression = retargetExpression(corrected); filtered = filter.update(targetExpression, sample.monotonic_ms); rawPose = sample.pose; correctedPose = relativePose(rawPose, calibration?.head_baseline); appliedPose = poseFilter.update(correctedPose, sample.monotonic_ms); }
   else { raw = neutral(); corrected = neutral(); targetExpression = neutral(); filtered = neutral(); rawPose = null; correctedPose = zeroPose(); appliedPose = zeroPose(); filter.reset(); poseFilter.reset(); }
   if (wasDetected !== detected) log(detected ? 'tracking_recovered' : 'tracking_lost', { sample_kind: sample.sample_kind });
-  calibrationSample(sample); renderExpression(sample.monotonic_ms);
+  calibrationSample(sample); ensureFeedbackCondition();
+  if (sample.detected) {
+    lastInput = { expression: { ...filtered }, input_timestamp_ms: sample.monotonic_ms, available_at_ms: performance.now(), processing_start_ms: sample.processing_start_ms ?? null, frame_capture_at_ms: sample.frame_capture_at_ms ?? null, video_presentation_at_ms: sample.video_presentation_at_ms ?? null };
+    if (condition() === 'C_delayed' && study?.phase === 'running' && !study.paused && !document.hidden && viewportMatches()) {
+      if (!delayBuffer.push(lastInput)) log('feedback_buffer_reset', { reason: delayBuffer.reason });
+    }
+  } else resetFeedback('tracking_lost');
+  renderExpression();
   const frame = makeFrame(sample);
   pendingFrame = frame;
   if (study?.phase === 'running') study.session.frames.push(frame);
@@ -151,9 +214,13 @@ function toggleClip() {
   if (evaluation.active) return message('请先结束工程评估。');
   if (clip?.status === 'recording') return finishClip('user');
   if (clip && !clipExported) return message('请先保存上一段参数，再开始新录制。');
+  if (mode !== 'demo' || activeStudy()) return message('请在实时预览模式独立录制素材，不要在正式任务中录制。');
   if (!tracker.live() || !calibration || replay) return message('真实参数录制需要摄像头和中性校准；回放不能重新标为实时输入。');
   clipExported = false;
   clip = makeTrackingRecord();
+  clip.participant_id = el('recording-id').value.trim(); clip.recording_context = 'independent_stimulus_capture';
+  if (!validParticipantId(clip.participant_id)) { clip = null; clipExported = true; return message('请填写有效的素材录制匿名编号，例如STIMULUS01'); }
+  demoCondition = 'B'; document.querySelectorAll('[data-demo-condition]').forEach(b => b.classList.toggle('selected', b.dataset.demoCondition === 'B')); renderExpression();
   message('正在录制真实参数。再次点击停止后可保存或回放；来源将随文件保留。'); updateUI(true);
 }
 function finishClip(reason = 'user') { if (!clip || clip.status !== 'recording') return; clip.ended_at = iso(); clip.end_monotonic_ms = performance.now(); clip.duration_ms = clip.end_monotonic_ms - clip.start_monotonic_ms; clip.status = 'complete'; clip.stop_reason = reason; clip.video_quality_end = tracker.quality(); el('tracking-save').disabled = !clip.frames.length; updateUI(true); message('参数录制已停止，共' + clip.frames.length + '条采样。请保存参数JSON。'); }
@@ -169,7 +236,7 @@ function toggleVideo() {
   if (!tracker.live() || !calibration || !tracked() || replay || sourceType() !== 'live_camera') return message('请先连接真实摄像头并校准；软件测试与参数回放不能录为真人演示。');
   recordedVideo = null;
   recorder = new DemoRecorder({ avatarCanvas: el('avatar'), video, sourceType: sourceType(), onStatus: message, overlay: () => ({ condition: condition(), tracking: tracked() ? '检测到面部' : '追踪丢失，请回到镜头前', jaw: raw.jawOpen.toFixed(2), blink: ((raw.eyeBlinkLeft + raw.eyeBlinkRight) / 2).toFixed(2), smile: ((raw.mouthSmileLeft + raw.mouthSmileRight) / 2).toFixed(2), rate: fmt(resultRate.value(performance.now())) }), onFinished: result => { recordedVideo = result.stop_reason === 'cancelled' ? null : result; el('video-save').disabled = !recordedVideo || result.duration_ms < 20000; message(recordedVideo ? result.duration_ms >= 20000 ? '录制结束。可保存为media/raw/01_live.mp4，随后人工核对连续画面。' : '本段不足20秒，请重新录制；不会作为01_live.mp4保存。' : '录像已取消。'); updateUI(true); } });
-  try { recorder.start(); lastVideoLabel = -1; message('正在连续录制真人演示，至少20秒。可在画面右上角切换A/B。'); updateUI(true); } catch (error) { recorder = null; message(error.message + '。可使用系统录屏，方法见README。'); }
+  try { recorder.start(); lastVideoLabel = -1; message('正在连续录制真人演示，至少20秒。右上角可切换静态调试/实时预览。'); updateUI(true); } catch (error) { recorder = null; message(error.message + '。可使用系统录屏，方法见README。'); }
 }
 async function saveVideo() {
   if (!recordedVideo || recordedVideo.duration_ms < 20000) return;
@@ -185,32 +252,43 @@ async function saveVideo() {
 async function loadReplay(event) {
   const file = event.target.files?.[0]; if (!file) return;
   if (activeStudy() || recorder?.active || recordedVideo || (study && !exported) || (clip && !clipExported) || !evaluation.saved) { event.target.value = ''; return message('请先结束当前体验、评估或录制。'); }
-  try { const record = await readTrackingFile(file); await avatar.setAvatar(record.data.model_info.avatar_key); if (avatar.info.sha256 !== record.data.model_info.sha256) throw new Error('回放模型校验和不一致'); stopCamera('replay_loaded'); replay = new TrackingReplay(record); calibration = copy(record.data.calibration); mode = 'demo'; filter.reset(); resultRate.times = []; applyRate.times = []; lastPhase = ''; updateUI(true); message('参数回放已加载。来源标识会一直显示；回放不能参加正式A/B体验。'); }
+  try { const record = await readTrackingFile(file); await avatar.setAvatar(record.data.model_info.avatar_key); if (avatar.info.sha256 !== record.data.model_info.sha256) throw new Error('回放模型校验和不一致'); stopCamera('replay_loaded'); replay = new TrackingReplay(record); calibration = copy(record.data.calibration); mode = 'demo'; filter.reset(); resultRate.times = []; applyRate.times = []; lastPhase = ''; updateUI(true); message('参数回放已加载。来源标识会一直显示；回放不能参加正式A/B/C体验。'); }
   catch (error) { message('回放失败：' + error.message); }
   event.target.value = '';
 }
 function exitReplay() { replay = null; calibration = null; clearSignal(); el('replay-file').value = ''; updateUI(true); message('已退出回放。请重新连接摄像头并校准。'); }
+async function loadStimulus(event) {
+  const file = event.target.files?.[0]; if (!file || activeStudy()) return;
+  stimulus = null; stimulusPlayback = null; stimulusLoading = true; el('stimulus-confirm').checked = false; updateUI(true);
+  try { stimulus = await readPrerecordedFile(file, avatar.info); message('预录素材已校验。请人工检查自然程度并确认独立录制，再开始体验。'); }
+  catch (error) { message('预录素材无效：' + error.message); }
+  finally { stimulusLoading = false; event.target.value = ''; updateUI(true); }
+}
 function updatePhase() {
   const phase = mode === 'demo' ? 'demo' : study?.phase || 'setup';
   if (phase === lastPhase) return;
   lastPhase = phase;
-  const mapping = { setup: 'study-setup', ready: 'study-setup', running: 'running-panel', survey: 'survey-panel', rest: 'rest-panel', complete: 'complete-panel', aborted: 'complete-panel', demo: 'demo-panel' };
-  for (const id of ['study-setup', 'running-panel', 'survey-panel', 'rest-panel', 'complete-panel', 'demo-panel']) el(id).hidden = id !== mapping[phase];
-  document.body.classList.toggle('study-active', mode === 'study' && ['running', 'survey', 'rest'].includes(phase));
-  if (phase === 'survey') { el('rating-form').reset(); el('survey-title').textContent = `体验 ${study.block.condition} 后的感受`; message('请只评价刚才的条件，按真实感受填写。'); }
-  if (['complete', 'aborted'].includes(phase)) { el('save-study').disabled = false; el('completion-title').textContent = phase === 'complete' ? '两条件体验已完成' : '本次体验已结束'; el('completion-detail').textContent = phase === 'complete' ? '请保存原始记录。分析将逐题报告，不合成为具身感总分。' : '本次记录不完整，仍可保存故障过程；不完整配对不会纳入正式描述统计。'; }
+  const mapping = { setup: 'study-setup', ready: 'study-setup', running: 'running-panel', survey: 'survey-panel', rest: 'rest-panel', complete: 'complete-panel', aborted: 'complete-panel', preference: 'preference-panel', demo: 'demo-panel' };
+  for (const id of ['study-setup', 'running-panel', 'survey-panel', 'rest-panel', 'complete-panel', 'preference-panel', 'demo-panel']) el(id).hidden = id !== mapping[phase];
+  document.body.classList.toggle('study-active', mode === 'study' && ['running', 'survey', 'rest', 'preference'].includes(phase));
+  if (phase === 'preference') { el('task-title').textContent = '整体偏好'; el('task-description').textContent = '按真实使用意愿选择，也可以选择无明显偏好'; }
+  if (phase === 'survey') { el('rating-form').reset(); el('survey-title').textContent = `体验 ${orderCode([study.block.condition])} 后的感受`; message('请只评价刚才的条件，按真实感受填写。'); }
+  if (['complete', 'aborted'].includes(phase)) { el('save-study').disabled = false; el('completion-title').textContent = phase === 'complete' ? '三条件体验已完成' : '本次体验已结束'; el('completion-detail').textContent = phase === 'complete' ? '请保存原始记录。分析将逐题报告，不合成为具身感总分。' : '本次记录不完整，仍可保存故障过程；不完整配对不会纳入正式描述统计。'; }
 }
 function updateUI(force = false) {
   const now = performance.now(); if (!force && now - lastUI < 100) return; lastUI = now;
   updatePhase();
   const hasFace = tracked(), live = tracker.live(), locked = Boolean(activeStudy());
-  el('avatar-select').disabled = !ready || loading || locked || Boolean(replay) || Boolean(calibrating) || evaluation.active || !evaluation.saved || Boolean(recorder?.active) || Boolean(recordedVideo) || clip?.status === 'recording' || Boolean(clip && !clipExported) || Boolean(study && !exported);
+  el('avatar-select').disabled = !ready || loading || locked || Boolean(replay) || Boolean(calibrating) || stimulusLoading || evaluation.active || !evaluation.saved || Boolean(recorder?.active) || Boolean(recordedVideo) || clip?.status === 'recording' || Boolean(clip && !clipExported) || Boolean(study && !exported);
   if (avatar) { el('avatar-label').textContent = avatar.info.label; el('avatar-select').value = avatar.info.avatar_key; }
   el('camera-start').disabled = !ready || loading || live || Boolean(replay); el('camera-stop').disabled = !loading && !live;
   el('setup-fields').disabled = locked; el('consent').disabled = locked;
+  el('stimulus-file').disabled = !ready || locked || stimulusLoading;
+  el('stimulus-confirm').disabled = locked || !stimulus || stimulusLoading;
+  el('stimulus-info').textContent = stimulusLoading ? '正在校验预录素材…' : stimulus ? `已加载 ${(stimulus.durationMs / 1000).toFixed(1)}秒真实参数 · SHA-256 ${stimulus.sha256.slice(0, 12)} · 张嘴/眨眼/微笑/抬眉每分钟变化 ${Object.values(stimulus.profile).map(p => p.cycles_per_min.toFixed(1)).join(' / ')}` : '尚未加载：先在实时预览中独立录制60秒以上参数，人工核对自然变化，再载入本处。';
   const canCalibrate = live && hasFace && !locked && !calibrating && !recorder?.active && clip?.status !== 'recording' && !evaluation.active;
   el('calibrate').disabled = !canCalibrate; el('demo-calibrate').disabled = !canCalibrate;
-  el('study-start').disabled = !calibration || !hasFace || !el('consent').checked || Boolean(replay) || !validParticipantId(el('participant-id').value.trim()) || evaluation.active || clip?.status === 'recording' || Boolean(recorder?.active);
+  el('study-start').disabled = !stimulus || stimulusLoading || !el('stimulus-confirm').checked || stimulus.data.participant_id === el('participant-id').value.trim() || !calibration || !hasFace || !el('consent').checked || Boolean(replay) || !validParticipantId(el('participant-id').value.trim()) || evaluation.active || clip?.status === 'recording' || Boolean(recorder?.active);
   el('mode-study').classList.toggle('selected', mode === 'study'); el('mode-demo').classList.toggle('selected', mode === 'demo');
   el('mode-study').disabled = Boolean(replay); el('demo-switches').hidden = mode !== 'demo'; el('parameter-overlay').hidden = mode !== 'demo';
   el('source-badge').textContent = sourceLabel();
@@ -222,15 +300,15 @@ function updateUI(force = false) {
   el('tracking-status').textContent = replay ? replay.playing ? hasFace ? '回放检测：有面部' : '回放检测：丢失' : '回放已暂停' : live ? hasFace ? '面部追踪正常' : '未检测到面部' : loading ? '正在启动…' : '摄像头未开启';
   el('render-rate').textContent = `画面 ${fmt(renderRate.value(now))} fps`; el('tracking-rate').textContent = `${replay ? '回放' : '结果'} ${fmt(resultRate.value(now))} Hz`;
   if (calibrating) { const elapsed = calibrating.start === null ? 0 : now - calibrating.start; el('calibration-status').textContent = `保持中性：${Math.min(3, elapsed / 1000).toFixed(1)} / 3.0秒，${calibrating.samples.length}个有效样本`; el('task-title').textContent = '保持自然中性表情'; el('task-description').textContent = hasFace ? '合嘴、睁眼、放松面部；丢失追踪将重新计时' : '请回到镜头前，校准计时已重新开始'; el('task-index').textContent = '中性校准'; }
-  else el('calibration-status').textContent = calibration ? `中性校准完成 · ${calibration.sample_count}个样本 · 两条件共用` : '正对镜头，合嘴、睁眼并放松面部。';
+  else el('calibration-status').textContent = calibration ? `中性校准完成 · ${calibration.sample_count}个样本 · 三条件共用` : '正对镜头，合嘴、睁眼并放松面部。';
   if (study?.phase === 'running' && mode === 'study') {
     const task = taskAt(study.activeMs);
-    if (task) { el('task-title').textContent = task.text; el('task-description').textContent = task.detail; el('task-index').textContent = `体验 ${study.block.condition} · 任务 ${task.index + 1}/4 · 本任务剩余${Math.ceil(task.remaining_ms / 1000)}秒`; }
-    el('task-progress').value = study.activeMs; el('phase-label').textContent = `体验 ${study.block.condition} · 有效 ${Math.floor(study.activeMs / 1000)} / 90秒`; el('condition-title').textContent = `体验 ${study.block.condition}`;
+    if (task) { el('task-title').textContent = task.text; el('task-description').textContent = task.detail; el('task-index').textContent = `体验 ${orderCode([study.block.condition])} · 任务 ${task.index + 1}/4 · 本任务剩余${Math.ceil(task.remaining_ms / 1000)}秒`; }
+    el('task-progress').value = study.activeMs; el('phase-label').textContent = `体验 ${orderCode([study.block.condition])} · 有效 ${Math.floor(study.activeMs / 1000)} / 60秒`; el('condition-title').textContent = `体验 ${orderCode([study.block.condition])}`;
     el('pause-reason').textContent = !viewportMatches() ? `窗口尺寸改变，已暂停；请恢复为 ${study.session.viewport.width}×${study.session.viewport.height}` : study.paused ? '已暂停，点击继续恢复任务' : document.hidden ? '页面不在前台，有效计时暂停' : hasFace ? '正在记录本条件' : '追踪丢失，计时已暂停；正对镜头后自动恢复'; el('study-pause').textContent = study.paused ? '继续' : '暂停';
   } else if (study?.phase === 'rest' && mode === 'study') {
     const left = Math.max(0, Math.ceil((study.restUntil - now) / 1000)); el('next-condition').disabled = left > 0 || !hasFace || !viewportMatches(); el('next-condition').textContent = left ? `请再休息 ${left} 秒` : !viewportMatches() ? '请先恢复原窗口尺寸' : '开始下一条件'; el('task-title').textContent = '放松面部，稍作休息'; el('task-description').textContent = '保持相同光照、距离和窗口大小'; el('task-index').textContent = '条件间休息'; el('phase-label').textContent = '等待下一条件';
-  } else if (study?.phase === 'survey' && mode === 'study') { el('task-title').textContent = '记录刚才的体验'; el('task-description').textContent = '请按真实感受作答，没有正确或理想答案'; el('task-index').textContent = `体验 ${study.block.condition} 结束`; el('phase-label').textContent = '本条件自评'; }
+  } else if (study?.phase === 'preference' && mode === 'study') { el('task-title').textContent = '整体偏好'; el('task-description').textContent = '按真实使用意愿选择，也可以选择无明显偏好'; el('phase-label').textContent = '三次条件后自评已完成'; } else if (study?.phase === 'survey' && mode === 'study') { el('task-title').textContent = '记录刚才的体验'; el('task-description').textContent = '请按真实感受作答，没有正确或理想答案'; el('task-index').textContent = `体验 ${orderCode([study.block.condition])} 结束`; el('phase-label').textContent = '本条件自评'; }
   else if (!calibrating && mode === 'demo') {
     el('task-index').textContent = `实时预览 · ${demoCondition}`;
     if (replay) {
@@ -246,7 +324,7 @@ function updateUI(force = false) {
       el('task-title').textContent = '未检测到面部';
       el('task-description').textContent = '请面向镜头，让整张脸进入左下角小窗，并保持光线充足。';
     } else if (demoCondition === 'A') {
-      el('task-title').textContent = 'A：表情保持中性';
+      el('task-title').textContent = '静态调试：表情保持中性';
       el('task-description').textContent = '点击右上角“B · 实时跟随”，即可查看表情响应。';
     } else {
       el('task-title').textContent = 'B：实时表情跟随';
@@ -254,7 +332,7 @@ function updateUI(force = false) {
     }
     el('phase-label').textContent = replay ? '回放展示 · 不用于正式体验' : '实时预览 · 本人小窗可见 · 非正式任务';
     if (!study) el('task-progress').value = 0;
-  } else if (!calibrating) { el('task-title').textContent = study ? '本次体验已结束' : calibration ? '准备好后开始体验' : '从自然的中性表情开始'; el('task-description').textContent = '两条件各90秒，任务与设置完全相同'; el('task-index').textContent = study ? '等待保存记录' : '准备体验'; el('phase-label').textContent = study ? '体验结束' : '尚未开始'; if (!study) el('task-progress').value = 0; }
+  } else if (!calibrating) { el('task-title').textContent = study ? '本次体验已结束' : calibration ? '准备好后开始体验' : '从自然的中性表情开始'; el('task-description').textContent = '三条件各60秒，任务与设置完全相同'; el('task-index').textContent = study ? '等待保存记录' : '准备体验'; el('phase-label').textContent = study ? '体验结束' : '尚未开始'; if (!study) el('task-progress').value = 0; }
   const numbers = { jaw: raw.jawOpen, blink: actionStrength(raw,'blink'), smile: actionStrength(raw,'smile'), sad: actionStrength(raw,'sad'), surprise: actionStrength(raw,'surprise'), angry: actionStrength(raw,'angry'), pucker: raw.mouthPucker };
   for (const [key, value] of Object.entries(numbers)) { el(key + '-meter').value = hasFace ? value : 0; el(key + '-value').textContent = hasFace ? value.toFixed(2) : '—'; }
   el('head-pose').textContent = !calibration ? '校准后启用转头' : !hasFace || !validPose(rawPose) || !validPose(calibration.head_baseline) ? '头部姿态暂不可用' : `左右 ${(appliedPose.yaw * 180 / Math.PI).toFixed(0)}° · 上下 ${(appliedPose.pitch * 180 / Math.PI).toFixed(0)}° · 侧倾 ${(appliedPose.roll * 180 / Math.PI).toFixed(0)}°`;
@@ -274,14 +352,16 @@ function loop(timestamp) {
     }
     const now = performance.now();
     if (cameraWasLive && !tracker.live() && !loading) { log('camera_connection_lost'); stopCamera('camera_connection_lost'); message('摄像头连接已中断，请保存当前过程；重新连接后需再次校准。'); }
-    if (study?.phase === 'running') { const previous = study.phase; study.tick(now, iso(), { tracked: tracked(), visible: !document.hidden }); const task = taskAt(study.activeMs); if (task && task.id !== lastTask) { lastTask = task.id; study.event('task_started', now, iso(), { task: task.id }); } if (study.phase !== previous) updateUI(true); }
+    if (study?.phase === 'running') { const previous = study.phase; study.tick(now, iso(), { tracked: tracked(), visible: !document.hidden && viewportMatches() }); const task = taskAt(study.activeMs); if (task && task.id !== lastTask) { lastTask = task.id; study.event('task_started', now, iso(), { task: task.id }); } if (study.phase !== previous) { if(pendingFrame)pendingFrame.output_rendered=false; renderExpression(now); updateUI(true); } }
     if (avatar && !document.hidden) {
       avatar.render(); renderRate.mark(now); lastRenderAt = now; evaluation.render();
       if (pendingFrame) {
+        pendingFrame.output_rendered = pendingFrame.output_rendered !== false;
         const submitted = performance.now(); pendingFrame.render_submitted_at_ms = submitted;
+        pendingFrame.software_latency_ms = pendingFrame.output_rendered && Number.isFinite(pendingFrame.feedback_processing_start_ms) && submitted >= pendingFrame.feedback_processing_start_ms ? submitted - pendingFrame.feedback_processing_start_ms : null;
         const delta = start => Number.isFinite(start) && start >= 0 && submitted >= start ? submitted - start : null;
-        pendingFrame.frame_to_render_submit_ms = delta(pendingFrame.frame_capture_at_ms);
-        pendingFrame.video_present_to_render_submit_ms = delta(pendingFrame.video_presentation_at_ms);
+        pendingFrame.frame_to_render_submit_ms = pendingFrame.output_rendered ? delta(pendingFrame.feedback_frame_capture_ms) : null;
+        pendingFrame.video_present_to_render_submit_ms = pendingFrame.output_rendered ? delta(pendingFrame.feedback_video_presentation_ms) : null;
         evaluation.frame(pendingFrame); pendingFrame = null;
       }
     }
@@ -291,21 +371,25 @@ function loop(timestamp) {
 }
 
 for (const question of QUESTIONS) { const fieldset = document.createElement('fieldset'); const legend = document.createElement('legend'); legend.textContent = question.text; fieldset.append(legend); const row = document.createElement('div'); row.className = 'likert'; for (let score = 1; score <= 7; score++) { const label = document.createElement('label'); const input = document.createElement('input'); input.type = 'radio'; input.name = question.id; input.value = String(score); input.required = true; label.append(input, document.createTextNode(String(score))); row.append(label); } fieldset.append(row); el('questions').append(fieldset); }
+el('preference-form').addEventListener('submit', submitPreference);
+el('random-order').addEventListener('click', () => { el('condition-order').value = ORDER_CODES[crypto.getRandomValues(new Uint32Array(1))[0] % ORDER_CODES.length]; });
+el('download-preference').addEventListener('click', () => study?.session.preference && download(csv([study.session.preference], PREFERENCE_COLUMNS), 'text/csv;charset=utf-8', `IPP31078_${study.session.participant_id}_preference.csv`));
 el('camera-start').addEventListener('click', startCamera);
+el('stimulus-file').addEventListener('change', loadStimulus); el('stimulus-confirm').addEventListener('change', () => updateUI(true));
 el('camera-stop').addEventListener('click', () => { stopCamera('user_camera_stop'); message('摄像头已停止，已有会话可保存。'); });
 el('consent').addEventListener('change', () => { if (!el('consent').checked && (tracker.live() || loading)) { stopCamera('consent_withdrawn'); message('已撤回体验选择，摄像头与记录已停止。'); } updateUI(true); });
 el('participant-id').addEventListener('input', () => { el('condition-order').value = suggestedOrder(el('participant-id').value.trim()).join(''); updateUI(true); });
 el('mode-study').addEventListener('click', () => switchMode('study')); el('mode-demo').addEventListener('click', () => switchMode('demo'));
 el('avatar-select').addEventListener('change', switchAvatar);
 el('calibrate').addEventListener('click', beginCalibration); el('demo-calibrate').addEventListener('click', beginCalibration); el('study-start').addEventListener('click', startStudy);
-el('study-pause').addEventListener('click', () => { if (!study || study.phase !== 'running') return; if (study.paused && !viewportMatches()) return message(`请先恢复为 ${study.session.viewport.width}×${study.session.viewport.height} 的窗口，再继续体验。`); study.paused = !study.paused; log(study.paused ? 'manual_pause' : 'manual_resume'); updateUI(true); });
+el('study-pause').addEventListener('click', () => { if (!study || study.phase !== 'running') return; if (study.paused && !viewportMatches()) return message(`请先恢复为 ${study.session.viewport.width}×${study.session.viewport.height} 的窗口，再继续体验。`); study.paused = !study.paused; resetFeedback(study.paused ? 'manual_pause' : 'manual_resume'); renderExpression(); log(study.paused ? 'manual_pause' : 'manual_resume'); updateUI(true); });
 el('study-abort').addEventListener('click', () => { study?.abort('user_ended', performance.now(), iso()); stopCamera('user_ended'); message('本次体验已结束，仍可保存不完整记录。'); });
 el('rating-form').addEventListener('submit', submitRating); el('next-condition').addEventListener('click', nextCondition); el('save-study').addEventListener('click', saveStudy);
 el('download-json').addEventListener('click', () => { if (!study) return; download(JSON.stringify({ ...study.session, exported_at: iso() }, null, 2), 'application/json', `IPP31078_${study.session.source_type}_${study.session.participant_id}_${study.session.session_id}.json`); exported = true; });
 el('download-frames').addEventListener('click', () => study && download(csv(study.session.frames, FRAME_COLUMNS), 'text/csv;charset=utf-8', `IPP31078_${study.session.source_type}_${study.session.participant_id}_frames.csv`));
 el('download-ratings').addEventListener('click', () => study && download(csv(study.session.ratings, RATING_COLUMNS), 'text/csv;charset=utf-8', `IPP31078_${study.session.source_type}_${study.session.participant_id}_ratings.csv`));
-el('new-participant').addEventListener('click', () => { if (!exported) return message('请先保存记录或下载完整JSON。'); const match = /^P(\d+)$/i.exec(el('participant-id').value); if (match) el('participant-id').value = 'P' + String(Number(match[1]) + 1).padStart(2, '0'); el('condition-order').value = suggestedOrder(el('participant-id').value).join(''); study = null; calibration = null; calibrating = null; el('consent').disabled = false; el('consent').checked = false; lastPhase = ''; updateUI(true); message('新会话需重新同意、连接和中性校准。匿名编号只是记录字段，不代表已完成参与。'); });
-document.querySelectorAll('[data-demo-condition]').forEach(button => button.addEventListener('click', () => { demoCondition = button.dataset.demoCondition; document.querySelectorAll('[data-demo-condition]').forEach(b => b.classList.toggle('selected', b === button)); renderExpression(); log('demo_condition_changed', { condition: demoCondition }); updateUI(true); }));
+el('new-participant').addEventListener('click', () => { if (!exported) return message('请先保存记录或下载完整JSON。'); const match = /^P(\d+)$/i.exec(el('participant-id').value); if (match) el('participant-id').value = 'P' + String(Number(match[1]) + 1).padStart(2, '0'); el('condition-order').value = suggestedOrder(el('participant-id').value).join(''); study = null; calibration = null; calibrating = null; el('consent').disabled = false; el('consent').checked = false; el('stimulus-confirm').checked = false; lastPhase = ''; updateUI(true); message('新会话需重新同意、连接和中性校准。匿名编号只是记录字段，不代表已完成参与。'); });
+document.querySelectorAll('[data-demo-condition]').forEach(button => button.addEventListener('click', () => { if (clip?.status === 'recording' || evaluation.active) return message('素材录制和工程评估期间固定使用实时驱动。'); demoCondition = button.dataset.demoCondition; document.querySelectorAll('[data-demo-condition]').forEach(b => b.classList.toggle('selected', b === button)); renderExpression(); log('demo_condition_changed', { condition: demoCondition }); updateUI(true); }));
 el('tracking-record').addEventListener('click', toggleClip); el('tracking-save').addEventListener('click', saveClip); el('video-record').addEventListener('click', toggleVideo); el('video-save').addEventListener('click', saveVideo);
 for (const [key, spec] of Object.entries(ACTIONS)) { const option = document.createElement('option'); option.value = key; option.textContent = spec.label; el('evaluation-action').append(option); }
 function prepareTrialInputs(action) {
@@ -314,7 +398,7 @@ function prepareTrialInputs(action) {
   el('trial-notes').value = '';
 }
 el('evaluation-start').addEventListener('click', () => {
-  try { evaluation.start(performance.now(), iso(), tracker.quality()); el('evaluation-action').value = 'neutral'; prepareTrialInputs('neutral'); evaluation.beginTrial('neutral', performance.now(), iso()); updateUI(true); message('开始工程评估：先保持中性至少10秒，随后完成本项并逐项检查动作。'); }
+  try { demoCondition = 'B'; document.querySelectorAll('[data-demo-condition]').forEach(b => b.classList.toggle('selected', b.dataset.demoCondition === 'B')); renderExpression(); evaluation.start(performance.now(), iso(), tracker.quality()); el('evaluation-action').value = 'neutral'; prepareTrialInputs('neutral'); evaluation.beginTrial('neutral', performance.now(), iso()); updateUI(true); message('开始工程评估：先保持中性至少10秒，随后完成本项并逐项检查动作。'); }
   catch (error) { message(error.message); }
 });
 el('trial-start').addEventListener('click', () => { try { const action = el('evaluation-action').value; prepareTrialInputs(action); evaluation.beginTrial(action, performance.now(), iso()); updateUI(true); } catch (error) { message(error.message); } });

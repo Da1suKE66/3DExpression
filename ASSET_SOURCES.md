@@ -1,6 +1,6 @@
 # 资产、依赖与实际映射
 
-当前版本0.3.1。浏览器运行依赖固定为Three.js 0.160.1（MIT）、MediaPipe Tasks Vision 0.10.21（Apache-2.0）及官方Face Landmarker float16/1模型。精确URL、大小及SHA-256在evidence/dependency_lock.json。首次下载由scripts/fetch_assets.py校验，之后本地运行。
+当前软件版本0.5.0；现有几何/映射资源版本不因实验协议更新而重建。浏览器运行依赖固定为Three.js 0.160.1（MIT）、MediaPipe Tasks Vision 0.10.21（Apache-2.0）及官方Face Landmarker float16/1模型。精确URL、大小及SHA-256在evidence/dependency_lock.json。首次下载由scripts/fetch_assets.py校验，之后本地运行。
 
 ## 项目自制化身
 
@@ -12,11 +12,11 @@
 
 三者都有17个实际非零形变、独立head_pivot及上下眼皮/闭眼线，无动画片段。角色名称及形象属于相应权利人，这些是项目绘制的非官方同人练习模型。角色清单、逐文件摘要及实际映射见app/avatar_catalog.json；默认模型副本为app/model_manifest.json；v2、v3.0元数据分别保存在model_manifest-v1.json、model_manifest-v2.json，供旧记录校验。
 
-眼球不因眨眼缩放；上下眼皮合拢，闭眼时遮住眼球与高光。中性校准后的眨眼信号在0.08至0.55区间平滑映射到0至1，完整闭眼优先于睁大眼睛。眨眼通道35ms平滑，其他表情80ms。切换角色清除旧校准；录像、未保存记录和A/B体验期间锁定角色。
+眼球不因眨眼缩放；上下眼皮合拢，闭眼时遮住眼球与高光。中性校准后的眨眼信号在0.08至0.55区间平滑映射到0至1，完整闭眼优先于睁大眼睛。眨眼通道35ms平滑，其他表情80ms。切换角色清除旧校准；录像、未保存记录和A/B/C体验期间锁定角色。
 
 形变名称与MediaPipe类别逐一对应：jawOpen、eyeBlinkLeft、eyeBlinkRight、mouthSmileLeft、mouthSmileRight、mouthFrownLeft、mouthFrownRight、browDownLeft、browDownRight、browInnerUp、browOuterUpLeft、browOuterUpRight、eyeWideLeft、eyeWideRight、mouthPucker、mouthPressLeft、mouthPressRight。“伤心”“惊讶”等是动作组合标签，不是对真实情绪的识别结论。
 
-头部变换使用官方facialTransformationMatrixes输出，去除缩放、按YXZ分解、中性校准后取镜像相对旋转。原始及应用旋转均记录，限幅和平滑参数在协议中固定。A/B使用同一头部驱动。
+头部变换使用官方facialTransformationMatrixes输出，去除缩放、按YXZ分解、中性校准后取镜像相对旋转。原始及应用旋转均记录，限幅和平滑参数在协议中固定。A/B/C使用同一实时头部驱动，C仅延迟面部反馈。A播放独立真实跟踪参数，不使用GLB动画片段或手工关键帧；B实时，C对同样映射/滤波结果增加默认400ms缓冲。素材来源及冻结要求见materials/实验设置与报告引用基准_v5.md。
 
 项目自制代码、几何及模型的公开上传由项目所有者请求；没有另行指定开源许可，不能把依赖许可自动套用为所有项目资产的许可。
 
